@@ -1,0 +1,25 @@
+{
+  "name": "discord-pingu-bot",
+  "version": "1.0.0",
+  "description": "Simple discord reaction management bot written in NodeJS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SimonPannek/discord-pingu-bot.git"
+  },
+  "author": "Simon Pannek",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SimonPannek/discord-pingu-bot/issues"
+  },
+  "homepage": "https://github.com/SimonPannek/discord-pingu-bot#readme",
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "sequelize": "^6.5.0",
+    "sqlite3": "^5.0.2"
+  }
+}
