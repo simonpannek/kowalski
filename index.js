@@ -49,17 +49,19 @@ const users = sequelize.define("users", {
     }
 });
 
+// TODO: Outsource modules
+
 client.once("ready", async () => {
     // Sync database tables
     await roles.sync();
     await users.sync();
 
-    // TODO: Remove entries which are not needed anymore
+    // TODO: Remove entries which are not needed anymore (by instance if a user disconnected)
 
     console.log("Ready!");
 });
 
-client.on("message", message => {
+client.on("message", async message => {
     // Check if the message is addressed to the bot
     if (message.content.startsWith(config.prefix) && !message.author.bot) {
         // Parse command and arguments
@@ -69,9 +71,7 @@ client.on("message", message => {
         // Check for a known user command
         switch (command) {
             case "ping":
-                message.channel.send("Pong!");
-                return;
-            case "reactions":
+                await message.channel.send("Pong!");
                 return;
             default:
                 break;
@@ -80,9 +80,45 @@ client.on("message", message => {
         // Check for a know admin command
         if (message.member.hasPermission('ADMINISTRATOR')) {
             switch (command) {
-                case "test":
-                    message.channel.send("Test!");
-                    return;
+                case "role":
+                    if (args.length >= 2) {
+                        // TODO2
+                        switch (args[0]) {
+                            case "add":
+                                break;
+                            case "remove":
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                case "reactions":
+                    let user;
+                    if (args.length >= 1) {
+                        user = getUserFromMention(args[0]);
+                    } else {
+                        user = message.author;
+                    }
+
+                    if (user) {
+                        try {
+                            const reacted = await users.findOne({where: {guild: message.guild.id, user: user.id}});
+                            if (reacted) {
+                                await message.channel.send(`The user ${user.tag} has ${reacted.get("reactions")} reaction(s).`);
+                            } else {
+                                await message.channel.send(`Could not find an entry for the user ${user.tag}.`);
+                            }
+                        } catch (error) {
+                            console.error("Something went wrong when trying to access the reactions: ", error);
+                        }
+                    } else {
+                        await message.channel.send(`Could not find the user ${args[0]}.`);
+                    }
+                    break;
+                case "delete":
+                    // TODO
+                    break;
                 default:
                     break;
             }
@@ -95,6 +131,20 @@ client.on("messageReactionAdd", async (reaction, user) =>
 
 client.on("messageReactionRemove", async (reaction, user) =>
     await updateReaction(reaction, user, false));
+
+function getUserFromMention(mention) {
+    if (mention) {
+        if (mention.startsWith('<@') && mention.endsWith('>')) {
+            mention = mention.slice(2, -1);
+
+            if (mention.startsWith('!')) {
+                mention = mention.slice(1);
+            }
+        }
+
+        return client.users.cache.get(mention);
+    }
+}
 
 async function updateReaction(reaction, user, increment = true) {
     // Check if the reaction is partial
@@ -109,7 +159,7 @@ async function updateReaction(reaction, user, increment = true) {
     }
 
     // Check for right emoji
-    if (reaction.emoji.name === config.reactions.emoji && !reaction.me) {
+    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !reaction.message.author.bot) {
         // Check for timeout if it's an increment
         if (increment) {
             // Get time vars
@@ -142,12 +192,19 @@ async function updateReaction(reaction, user, increment = true) {
                 reacted = await users.create({guild: message.guild.id, user: message.author.id});
             }
 
+            // Get new score
+            const currentScore = reacted.get("reactions");
+            const newScore = await Math.max(currentScore + (increment ? 1 : -1), 0);
+
             // Update entry
-            increment ? reacted.increment("reactions") : reacted.decrement("reactions");
+            if (currentScore !== newScore) {
+                await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
+            }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
         }
     }
 }
 
-client.login(config.token);
+client.login(config.token).then(ignored => {
+});
