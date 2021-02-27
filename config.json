@@ -1,6 +1,6 @@
 {
   "prefix": "!",
-  "token": "bot-token<",
+  "token": "bot-token",
   "reactions": {
     "emoji": "\uD83D\uDC27",
     "cooldown": 30
