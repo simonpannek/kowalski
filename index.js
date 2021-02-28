@@ -134,18 +134,21 @@ client.on("message", async message => {
                         if (role) {
                             switch (args[0]) {
                                 case "add":
-                                    if (args.length >= 3 && parseInt(args[2])) {
-                                        try {
-                                            const created = await roles.create({
-                                                guild: message.guild.id,
-                                                reactions: parseInt(args[2]),
-                                                role: role.id
-                                            });
-                                            if (created) {
-                                                await message.channel.send(`The role ${role.name} was added to the database.`);
+                                    if (args.length >= 3) {
+                                        const parsed = parseInt(args[2]);
+                                        if (!isNaN(parsed)) {
+                                            try {
+                                                const created = await roles.create({
+                                                    guild: message.guild.id,
+                                                    reactions: parsed,
+                                                    role: role.id
+                                                });
+                                                if (created) {
+                                                    await message.channel.send(`The role ${role.name} was added to the database.`);
+                                                }
+                                            } catch (error) {
+                                                console.error("Something went wrong when trying to create the entry: ", error);
                                             }
-                                        } catch (error) {
-                                            console.error("Something went wrong when trying to create the entry: ", error);
                                         }
                                     }
                                     break;
@@ -342,7 +345,7 @@ function getRoleFromMention(mention, guild) {
 }
 
 async function updateReaction(reaction, user, increment = true) {
-    // TODO: Ignore reactions to self or users who are not on the server anymore
+    // TODO: Ignore reactions on messages of users who are not on the server anymore
 
     // Check if the reaction is partial
     if (reaction.partial) {
@@ -355,8 +358,11 @@ async function updateReaction(reaction, user, increment = true) {
         }
     }
 
+    const message = reaction.message;
+
     // Check for right emoji
-    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !reaction.message.author.bot) {
+    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !reaction.message.author.bot
+        && user.id !== reaction.message.author.id && message.guild.members.cache.has(message.author.id)) {
         // Check for timeout if it's an increment
         if (increment) {
             // Get time vars
@@ -381,7 +387,6 @@ async function updateReaction(reaction, user, increment = true) {
 
         try {
             // Get database entry
-            const message = reaction.message;
             let reacted = await users.findOne({where: {guild: message.guild.id, user: message.author.id}});
 
             if (!reacted) {
@@ -397,7 +402,35 @@ async function updateReaction(reaction, user, increment = true) {
             if (currentScore !== newScore) {
                 await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
 
-                // Check if role needs to get updated
+                // Get roles sorted ascending
+                const roles = roleBoundaries.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
+                // Determine role user should have
+                let userRole;
+                if (roles.length >= 1 && roles[0].reactions <= newScore) {
+                    userRole = roles[0];
+
+                    for (let role of roles) {
+                        if (role.reactions <= newScore) {
+                            userRole = role;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Update role
+                    await message.member.roles.add(userRole.role);
+                } else {
+                    userRole = null;
+                }
+
+                // Remove roles user should not have
+                for (let role of roles) {
+                    // Check if member has a role they should not have
+                    if ((!userRole || role.role !== userRole.role) && message.member.roles.cache.has(role.role)) {
+                        // Remove role
+                        await message.member.roles.remove(role.role);
+                    }
+                }
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
