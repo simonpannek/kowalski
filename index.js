@@ -56,7 +56,14 @@ client.once("ready", async () => {
     await roles.sync();
     await users.sync();
 
-    // TODO: Remove entries which are not needed anymore (by instance if a user disconnected)
+    // TODO: Cache roles?
+
+    // TODO: Remove entries which are not needed anymore (by instance if a user disconnected or bot got removed)
+
+    // Set custom status
+    await client.user.setActivity("reactions", {
+        type: "WATCHING"
+    });
 
     console.log("Ready!");
 });
@@ -82,14 +89,47 @@ client.on("message", async message => {
             switch (command) {
                 case "role":
                     if (args.length >= 2) {
-                        // TODO
-                        switch (args[0]) {
-                            case "add":
-                                break;
-                            case "remove":
-                                break;
-                            default:
-                                break;
+                        const role = getRoleFromMention(args[1], message.guild);
+                        if (role) {
+                            switch (args[0]) {
+                                case "add":
+                                    if (args.length >= 3 && parseInt(args[2])) {
+                                        try {
+                                            const created = await roles.create({
+                                                guild: message.guild.id,
+                                                reactions: parseInt(args[2]),
+                                                role: role.id
+                                            });
+                                            if (created) {
+                                                await message.channel.send(`The role ${role.name} was added to the database.`);
+                                            }
+                                        } catch (error) {
+                                            console.error("Something went wrong when trying to create the entry: ", error);
+                                        }
+                                    }
+                                    break;
+                                case "remove":
+                                    try {
+                                        const deleted = await roles.destroy({
+                                            where: {
+                                                guild: message.guild.id,
+                                                role: role.id
+                                            }
+                                        });
+                                        if (deleted) {
+                                            await message.channel.send(`The role ${role.name} was removed from the database.`);
+                                        } else {
+                                            await message.channel.send(`Could not find an entry for the role ${role.name}.`);
+                                        }
+                                    } catch (error) {
+                                        console.error("Something went wrong when trying to delete the entry: ", error);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        } else {
+                            await message.channel.send(`Could not find the role ${args[1]}.`);
                         }
                     }
                     return;
@@ -146,10 +186,14 @@ client.on("message", async message => {
             switch (command) {
                 case "sql":
                     if (args.length >= 1) {
+                        // Join arguments to one single query
                         let query = args.join(" ");
+                        // Check query
                         if (query.startsWith("`") && query.endsWith("`")) {
+                            // Parse query
                             query = query.slice(1, -1);
                             try {
+                                // Execute query
                                 const results = await sequelize.query(query);
 
                                 if (results[0].length) {
@@ -176,6 +220,8 @@ client.on("messageReactionAdd", async (reaction, user) =>
 client.on("messageReactionRemove", async (reaction, user) =>
     await updateReaction(reaction, user, false));
 
+// TODO: Listen on guild disconnect and user disconnect
+
 function getUserFromMention(mention) {
     if (mention) {
         if (mention.startsWith('<@') && mention.endsWith('>')) {
@@ -187,6 +233,24 @@ function getUserFromMention(mention) {
         }
 
         return client.users.cache.get(mention);
+    }
+}
+
+function getRoleFromMention(mention, guild) {
+    if (mention && guild) {
+        //console.log(mention);
+        //console.log(guild);
+        if (mention.startsWith('<@') && mention.endsWith('>')) {
+            mention = mention.slice(2, -1);
+
+            if (mention.startsWith('&')) {
+                mention = mention.slice(1);
+            }
+        }
+
+        console.log(mention);
+
+        return guild.roles.cache.get(mention);
     }
 }
 
@@ -240,9 +304,11 @@ async function updateReaction(reaction, user, increment = true) {
             const currentScore = reacted.get("reactions");
             const newScore = await Math.max(currentScore + (increment ? 1 : -1), 0);
 
-            // Update entry
+            // Update entry and roles
             if (currentScore !== newScore) {
                 await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
+
+                // TODO: Check if user reached a new level
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
