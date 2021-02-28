@@ -1,6 +1,7 @@
 {
   "prefix": "!",
   "token": "bot-token",
+  "owner": "bot-owner",
   "reactions": {
     "emoji": "\uD83D\uDC27",
     "cooldown": 30

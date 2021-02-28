@@ -82,7 +82,7 @@ client.on("message", async message => {
             switch (command) {
                 case "role":
                     if (args.length >= 2) {
-                        // TODO2
+                        // TODO
                         switch (args[0]) {
                             case "add":
                                 break;
@@ -92,7 +92,7 @@ client.on("message", async message => {
                                 break;
                         }
                     }
-                    break;
+                    return;
                 case "reactions":
                     let user;
                     if (args.length >= 1) {
@@ -115,9 +115,53 @@ client.on("message", async message => {
                     } else {
                         await message.channel.send(`Could not find the user ${args[0]}.`);
                     }
-                    break;
+                    return;
                 case "delete":
-                    // TODO
+                    if (args.length >= 1) {
+                        const user = getUserFromMention(args[0]);
+
+                        if (user) {
+                            try {
+                                const deleted = await users.destroy({where: {guild: message.guild.id, user: user.id}});
+                                if (deleted) {
+                                    await message.channel.send(`The user ${user.tag} was removed from the database.`);
+                                } else {
+                                    await message.channel.send(`Could not find an entry for the user ${user.tag}.`);
+                                }
+                            } catch (error) {
+                                console.error("Something went wrong when trying to delete the entry: ", error);
+                            }
+                        } else {
+                            await message.channel.send(`Could not find the user ${args[0]}.`);
+                        }
+                    }
+                    return;
+                default:
+                    break;
+            }
+        }
+
+        // Check for know bot owner command
+        if (message.author.id === config.owner) {
+            switch (command) {
+                case "sql":
+                    if (args.length >= 1) {
+                        let query = args.join(" ");
+                        if (query.startsWith("`") && query.endsWith("`")) {
+                            query = query.slice(1, -1);
+                            try {
+                                const results = await sequelize.query(query);
+
+                                if (results[0].length) {
+                                    await message.channel.send("```json\n" + JSON.stringify(results[0]) + "\n```");
+                                } else {
+                                    await message.channel.send("Query was executed successfully.");
+                                }
+                            } catch (error) {
+                                console.error("Something went wrong when trying to execute the query: ", error);
+                            }
+                        }
+                    }
                     break;
                 default:
                     break;
