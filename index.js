@@ -5,6 +5,7 @@ const Sequelize = require("sequelize");
 
 const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
 const cooldowns = new Discord.Collection();
+const roleBoundaries = new Discord.Collection();
 
 const sequelize = new Sequelize({
     host: "localhost",
@@ -16,7 +17,7 @@ const sequelize = new Sequelize({
 const roles = sequelize.define("roles", {
     // Guild id
     guild: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         primaryKey: true
     },
     // Reactions needed
@@ -26,7 +27,7 @@ const roles = sequelize.define("roles", {
     },
     // Role id
     role: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         allowNull: false
     }
 });
@@ -34,12 +35,12 @@ const roles = sequelize.define("roles", {
 const users = sequelize.define("users", {
     // Guild id
     guild: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         primaryKey: true
     },
     // User id
     user: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         primaryKey: true
     },
     // Reactions received
@@ -55,10 +56,50 @@ client.once("ready", async () => {
     // Sync database tables
     await roles.sync();
     await users.sync();
+    console.log("Finished syncing database tables.");
 
-    // TODO: Cache roles?
+    // Fetch all users
+    const guilds = client.guilds.cache.array();
+    for (let guild of guilds) {
+        await guild.members.fetch();
+    }
+    console.log("Finished fetching users.");
 
-    // TODO: Remove entries which are not needed anymore (by instance if a user disconnected or bot got removed)
+    // Get all entries of the roles table
+    const startupRoles = await roles.findAll();
+    for (let currentRole of startupRoles) {
+        const guild = currentRole.get("guild");
+        if (!client.guilds.cache.has(guild)) {
+            // Remove entry if bot is not on the server anymore
+            currentRole.destroy();
+        } else {
+            // Create new cache entry if guild is new
+            if (!roleBoundaries.has(guild)) {
+                roleBoundaries.set(guild, []);
+            }
+
+            // Add role to collection
+            roleBoundaries.get(guild).push({
+                role: currentRole.get("role"),
+                reactions: currentRole.get("reactions")
+            });
+        }
+    }
+    console.log("Finished cleaning up and caching roles table.");
+
+    // Get all entries of the users table
+    const startupUsers = await users.findAll();
+    for (let currentUser of startupUsers) {
+        // Get guild and server
+        const guild = currentUser.get("guild");
+        const user = currentUser.get("user");
+        const server = client.guilds.cache.get(guild);
+        if (!guild || !server || !user || !server.member(user)) {
+            // Remove user entry if bot was removed from the guild or user was removed
+            currentUser.destroy();
+        }
+    }
+    console.log("Finished cleaning up users table.");
 
     // Set custom status
     await client.user.setActivity("reactions", {
@@ -132,6 +173,19 @@ client.on("message", async message => {
                             await message.channel.send(`Could not find the role ${args[1]}.`);
                         }
                     }
+
+                    // Reload roles
+                    roleBoundaries.set(message.guild.id, []);
+
+                    const updatedRoles = await roles.findAll({where: {guild: message.guild.id}});
+                    for (let currentRole of updatedRoles) {
+                        // Add role to collection
+                        roleBoundaries.get(message.guild.id).push({
+                            role: currentRole.get("role"),
+                            reactions: currentRole.get("reactions")
+                        });
+                    }
+
                     return;
                 case "reactions":
                     let user;
@@ -207,12 +261,35 @@ client.on("message", async message => {
                         }
                     }
                     break;
+                case "cache":
+                    if (args.length >= 1) {
+                        switch (args[0]) {
+                            case "roles":
+                                // Format the roles map into a string and print it
+                                let map = "";
+                                const keys = roleBoundaries.keys();
+                                for (let key of keys) {
+                                    map += key + " ==> " + JSON.stringify(roleBoundaries.get(key)) + "\n";
+                                }
+
+                                if (map) {
+                                    await message.channel.send("```json\n" + map + "```");
+                                } else {
+                                    await message.channel.send("Cache is currently empty.");
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
         }
     }
-});
+})
+;
 
 client.on("messageReactionAdd", async (reaction, user) =>
     await updateReaction(reaction, user, true));
@@ -220,7 +297,21 @@ client.on("messageReactionAdd", async (reaction, user) =>
 client.on("messageReactionRemove", async (reaction, user) =>
     await updateReaction(reaction, user, false));
 
-// TODO: Listen on guild disconnect and user disconnect
+client.on("guildMemberRemove", async member => {
+    // Remove database entry of user
+    await users.destroy({where: {guild: member.guild.id, user: member.user.id}});
+});
+
+client.on("guildDelete", async guild => {
+    // Remove database entries of guild
+    await users.destroy({where: {guild: guild.id}});
+    await roles.destroy({where: {guild: guild.id}});
+
+    // Clear guild from cache if there is an entry
+    if (roleBoundaries.has(guild.id)) {
+        roleBoundaries.delete(guild.id);
+    }
+});
 
 function getUserFromMention(mention) {
     if (mention) {
@@ -238,8 +329,6 @@ function getUserFromMention(mention) {
 
 function getRoleFromMention(mention, guild) {
     if (mention && guild) {
-        //console.log(mention);
-        //console.log(guild);
         if (mention.startsWith('<@') && mention.endsWith('>')) {
             mention = mention.slice(2, -1);
 
@@ -248,13 +337,13 @@ function getRoleFromMention(mention, guild) {
             }
         }
 
-        console.log(mention);
-
         return guild.roles.cache.get(mention);
     }
 }
 
 async function updateReaction(reaction, user, increment = true) {
+    // TODO: Ignore reactions to self or users who are not on the server anymore
+
     // Check if the reaction is partial
     if (reaction.partial) {
         // Try to fetch the information
@@ -308,7 +397,7 @@ async function updateReaction(reaction, user, increment = true) {
             if (currentScore !== newScore) {
                 await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
 
-                // TODO: Check if user reached a new level
+                // Check if role needs to get updated
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
