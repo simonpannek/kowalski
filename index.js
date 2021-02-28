@@ -4,13 +4,14 @@ const Discord = require("discord.js");
 const Sequelize = require("sequelize");
 
 const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
+
 const cooldowns = new Discord.Collection();
-const roleBoundaries = new Discord.Collection();
+const roleBoundariesCache = new Discord.Collection();
 
 const sequelize = new Sequelize({
     host: "localhost",
     dialect: "sqlite",
-    //logging: false,
+    logging: false,
     storage: "database.sqlite"
 });
 
@@ -52,6 +53,10 @@ const users = sequelize.define("users", {
 
 // TODO: Outsource modules
 
+// TODO: Help commands
+
+// TODO: Always sort roles cache
+
 client.once("ready", async () => {
     // Sync database tables
     await roles.sync();
@@ -74,12 +79,12 @@ client.once("ready", async () => {
             currentRole.destroy();
         } else {
             // Create new cache entry if guild is new
-            if (!roleBoundaries.has(guild)) {
-                roleBoundaries.set(guild, []);
+            if (!roleBoundariesCache.has(guild)) {
+                roleBoundariesCache.set(guild, []);
             }
 
             // Add role to collection
-            roleBoundaries.get(guild).push({
+            roleBoundariesCache.get(guild).push({
                 role: currentRole.get("role"),
                 reactions: currentRole.get("reactions")
             });
@@ -178,12 +183,12 @@ client.on("message", async message => {
                     }
 
                     // Reload roles
-                    roleBoundaries.set(message.guild.id, []);
+                    roleBoundariesCache.set(message.guild.id, []);
 
                     const updatedRoles = await roles.findAll({where: {guild: message.guild.id}});
                     for (let currentRole of updatedRoles) {
                         // Add role to collection
-                        roleBoundaries.get(message.guild.id).push({
+                        roleBoundariesCache.get(message.guild.id).push({
                             role: currentRole.get("role"),
                             reactions: currentRole.get("reactions")
                         });
@@ -269,20 +274,46 @@ client.on("message", async message => {
                         switch (args[0]) {
                             case "roles":
                                 // Format the roles map into a string and print it
-                                let map = "";
-                                const keys = roleBoundaries.keys();
+                                let rolesMap = "";
+                                const keys = roleBoundariesCache.keys();
                                 for (let key of keys) {
-                                    map += key + " ==> " + JSON.stringify(roleBoundaries.get(key)) + "\n";
+                                    rolesMap += key + " ==> " + JSON.stringify(roleBoundariesCache.get(key)) + "\n";
                                 }
 
-                                if (map) {
-                                    await message.channel.send("```json\n" + map + "```");
+                                if (rolesMap) {
+                                    await message.channel.send("```json\n" + rolesMap + "```");
                                 } else {
                                     await message.channel.send("Cache is currently empty.");
                                 }
                                 break;
                             default:
                                 break;
+                        }
+                    }
+                    break;
+                case "say":
+                    if (args.length >= 1) {
+                        // Delete message by user
+                        await message.delete();
+                        // Repeat the arguments given
+                        await message.channel.send(args.join(" "));
+                    }
+                    break;
+                case "react":
+                    if (args.length >= 1) {
+                        // Delete message by user
+                        await message.delete();
+                        // Find message to react to
+                        await message.channel.messages.fetch();
+                        const reactMessage = await message.channel.messages.cache.array()
+                            .sort((o1, o2) => o2.createdAt - o1.createdAt)
+                            .find(m => !m.deleted);
+                        if (reactMessage) {
+                            try {
+                                // React to message
+                                await reactMessage.react(args[0]);
+                            } catch (ignored) {
+                            }
                         }
                     }
                     break;
@@ -311,17 +342,17 @@ client.on("guildDelete", async guild => {
     await roles.destroy({where: {guild: guild.id}});
 
     // Clear guild from cache if there is an entry
-    if (roleBoundaries.has(guild.id)) {
-        roleBoundaries.delete(guild.id);
+    if (roleBoundariesCache.has(guild.id)) {
+        roleBoundariesCache.delete(guild.id);
     }
 });
 
 function getUserFromMention(mention) {
     if (mention) {
-        if (mention.startsWith('<@') && mention.endsWith('>')) {
+        if (mention.startsWith("<@") && mention.endsWith(">")) {
             mention = mention.slice(2, -1);
 
-            if (mention.startsWith('!')) {
+            if (mention.startsWith("!")) {
                 mention = mention.slice(1);
             }
         }
@@ -332,10 +363,10 @@ function getUserFromMention(mention) {
 
 function getRoleFromMention(mention, guild) {
     if (mention && guild) {
-        if (mention.startsWith('<@') && mention.endsWith('>')) {
+        if (mention.startsWith("<@") && mention.endsWith(">")) {
             mention = mention.slice(2, -1);
 
-            if (mention.startsWith('&')) {
+            if (mention.startsWith("&")) {
                 mention = mention.slice(1);
             }
         }
@@ -345,8 +376,6 @@ function getRoleFromMention(mention, guild) {
 }
 
 async function updateReaction(reaction, user, increment = true) {
-    // TODO: Ignore reactions on messages of users who are not on the server anymore
-
     // Check if the reaction is partial
     if (reaction.partial) {
         // Try to fetch the information
@@ -360,9 +389,10 @@ async function updateReaction(reaction, user, increment = true) {
 
     const message = reaction.message;
 
-    // Check for right emoji
-    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !reaction.message.author.bot
-        && user.id !== reaction.message.author.id && message.guild.members.cache.has(message.author.id)) {
+    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
+        && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
+        // Score increasing reaction
+
         // Check for timeout if it's an increment
         if (increment) {
             // Get time vars
@@ -403,7 +433,7 @@ async function updateReaction(reaction, user, increment = true) {
                 await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
 
                 // Get roles sorted ascending
-                const roles = roleBoundaries.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
+                const roles = roleBoundariesCache.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
                 // Determine role user should have
                 let userRole;
                 if (roles.length >= 1 && roles[0].reactions <= newScore) {
@@ -434,6 +464,16 @@ async function updateReaction(reaction, user, increment = true) {
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
+        }
+    }
+
+    if (!user.bot) {
+        const userMember = reaction.message.guild.members.cache.get(user.id);
+        if (userMember.roles.cache.size <= 1) {
+            const role = roleBoundariesCache.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
+            if (role && role.length >= 1) {
+                await userMember.roles.add(role[0].role);
+            }
         }
     }
 }
