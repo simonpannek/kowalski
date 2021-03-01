@@ -116,7 +116,7 @@ client.once("ready", async () => {
 
 client.on("message", async message => {
     // Check if the message is addressed to the bot
-    if (message.content.startsWith(config.prefix) && !message.author.bot) {
+    if (message.content.startsWith(config.prefix) && !message.author.bot && message.channel.type === "text") {
         // Parse command and arguments
         const args = message.content.slice(config.prefix.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
@@ -419,7 +419,7 @@ async function updateReaction(reaction, user, increment = true) {
 
                 // This is probably always true, because expired cooldowns should get removed automatically
                 if (now < expirationTime) {
-                    return reaction.remove();
+                    return reaction.users.remove(user);
                 }
             }
 
