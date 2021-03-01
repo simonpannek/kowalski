@@ -272,11 +272,25 @@ client.on("message", async message => {
                 case "cache":
                     if (args.length >= 1) {
                         switch (args[0]) {
+                            case "cooldowns":
+                                // Format the roles map into a string and print it
+                                let cooldownsMap = "";
+                                const cooldownsKeys = cooldowns.keys();
+                                for (let key of cooldownsKeys) {
+                                    cooldownsMap += key + " ==> " + JSON.stringify(cooldowns.get(key)) + "\n";
+                                }
+
+                                if (cooldownsMap) {
+                                    await message.channel.send("```json\n" + cooldownsMap + "```");
+                                } else {
+                                    await message.channel.send("Cache is currently empty.");
+                                }
+                                break;
                             case "roles":
                                 // Format the roles map into a string and print it
                                 let rolesMap = "";
-                                const keys = roleBoundariesCache.keys();
-                                for (let key of keys) {
+                                const rolesKeys = roleBoundariesCache.keys();
+                                for (let key of rolesKeys) {
                                     rolesMap += key + " ==> " + JSON.stringify(roleBoundariesCache.get(key)) + "\n";
                                 }
 
