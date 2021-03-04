@@ -5,13 +5,17 @@ const Sequelize = require("sequelize");
 
 const client = new Discord.Client({partials: ["MESSAGE", "REACTION"]});
 
+// Manages who currently has a cooldown until when
 const cooldowns = new Discord.Collection();
+// Messages, where the next removal-reaction event should get ignored
+const ignoreReactions = new Discord.Collection();
+// Caches the roles table so we do not have to query the database all the time
 const roleBoundariesCache = new Discord.Collection();
 
 const sequelize = new Sequelize({
     host: "localhost",
     dialect: "sqlite",
-    logging: false,
+    //logging: false,
     storage: "database.sqlite"
 });
 
@@ -56,6 +60,10 @@ const users = sequelize.define("users", {
 // TODO: Help commands
 
 // TODO: Always sort roles cache
+
+// TODO: Add cooldown to reactions and make it public
+
+// TODO: Fix @everyone back ping
 
 client.once("ready", async () => {
     // Sync database tables
@@ -275,6 +283,7 @@ client.on("message", async message => {
                             case "cooldowns":
                                 // Format the roles map into a string and print it
                                 let cooldownsMap = "";
+                                // TODO: Add guild id level to map
                                 const cooldownsKeys = cooldowns.keys();
                                 for (let key of cooldownsKeys) {
                                     cooldownsMap += key + " ==> " + JSON.stringify(cooldowns.get(key)) + "\n";
@@ -356,6 +365,10 @@ client.on("guildDelete", async guild => {
     await roles.destroy({where: {guild: guild.id}});
 
     // Clear guild from cache if there is an entry
+    if (ignoreReactions.has(guild.id)) {
+        ignoreReactions.delete(guild.id);
+    }
+
     if (roleBoundariesCache.has(guild.id)) {
         roleBoundariesCache.delete(guild.id);
     }
@@ -402,10 +415,16 @@ async function updateReaction(reaction, user, increment = true) {
     }
 
     const message = reaction.message;
+    const guildIgnore = ignoreReactions.get(message.guild.id);
 
-    if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
+    if (!increment && guildIgnore && guildIgnore.has(message.id)) {
+        // Reaction should get ignored
+
+        // Delete entry from cache
+        guildIgnore.delete(message.id);
+    } else if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
         && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
-        // Score increasing reaction
+        // Score increasing/decreasing reaction
 
         // Check for timeout if it's an increment
         if (increment) {
@@ -419,6 +438,14 @@ async function updateReaction(reaction, user, increment = true) {
 
                 // This is probably always true, because expired cooldowns should get removed automatically
                 if (now < expirationTime) {
+                    // Add message to ignored message, so removal event will get ignored
+                    if (!ignoreReactions.has(message.guild.id)) {
+                        ignoreReactions.set(message.guild.id, new Set());
+                    }
+
+                    ignoreReactions.get(message.guild.id).add(message.id);
+
+                    // Remove reaction
                     return reaction.users.remove(user);
                 }
             }
@@ -447,32 +474,35 @@ async function updateReaction(reaction, user, increment = true) {
                 await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
 
                 // Get roles sorted ascending
-                const roles = roleBoundariesCache.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
-                // Determine role user should have
-                let userRole;
-                if (roles.length >= 1 && roles[0].reactions <= newScore) {
-                    userRole = roles[0];
+                const guildBoundaries = roleBoundariesCache.get(message.guild.id);
+                if (guildBoundaries) {
+                    const roles = guildBoundaries.sort((o1, o2) => o1.reactions - o2.reactions);
+                    // Determine role user should have
+                    let userRole;
+                    if (roles.length >= 1 && roles[0].reactions <= newScore) {
+                        userRole = roles[0];
 
-                    for (let role of roles) {
-                        if (role.reactions <= newScore) {
-                            userRole = role;
-                        } else {
-                            break;
+                        for (let role of roles) {
+                            if (role.reactions <= newScore) {
+                                userRole = role;
+                            } else {
+                                break;
+                            }
                         }
+
+                        // Update role
+                        await message.member.roles.add(userRole.role);
+                    } else {
+                        userRole = null;
                     }
 
-                    // Update role
-                    await message.member.roles.add(userRole.role);
-                } else {
-                    userRole = null;
-                }
-
-                // Remove roles user should not have
-                for (let role of roles) {
-                    // Check if member has a role they should not have
-                    if ((!userRole || role.role !== userRole.role) && message.member.roles.cache.has(role.role)) {
-                        // Remove role
-                        await message.member.roles.remove(role.role);
+                    // Remove roles user should not have
+                    for (let role of roles) {
+                        // Check if member has a role they should not have
+                        if ((!userRole || role.role !== userRole.role) && message.member.roles.cache.has(role.role)) {
+                            // Remove role
+                            await message.member.roles.remove(role.role);
+                        }
                     }
                 }
             }
