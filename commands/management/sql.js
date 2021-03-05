@@ -23,7 +23,7 @@ module.exports = {
                     reply += `\n\n\`\`\`json\n${JSON.stringify(results[0])}\n\`\`\``;
                 }
 
-                return message.channel.send(reply);
+                return message.channel.send(reply, {split: true});
             } catch (error) {
                 console.error("Something went wrong when trying to execute the query: ", error);
             }

@@ -18,7 +18,7 @@ module.exports = {
                 }
 
                 if (cooldownsMap) {
-                    await message.channel.send("```json\n" + cooldownsMap + "```");
+                    await message.channel.send("```json\n" + cooldownsMap + "```", {split: true});
                 } else {
                     await message.channel.send("Cache is currently empty.");
                 }
@@ -32,7 +32,7 @@ module.exports = {
                 }
 
                 if (rolesMap) {
-                    await message.channel.send("```json\n" + rolesMap + "```");
+                    await message.channel.send("```json\n" + rolesMap + "```", {split: true});
                 } else {
                     await message.channel.send("Cache is currently empty.");
                 }
