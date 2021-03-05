@@ -1,4 +1,5 @@
 const {commands} = require("../../modules/globals");
+const {errorResponse} = require("../../modules/response");
 
 module.exports = {
     name: "reload",
@@ -24,7 +25,7 @@ module.exports = {
                 return message.channel.send(`Command ${command.name} was reloaded.`);
             } catch (error) {
                 console.error(`Something went wrong when trying to reload the command ${command.name}: `, error);
-                return message.channel.send(`Something went wrong reloading the command ${command.name}.`);
+                return errorResponse(message);
             }
         } else {
             return message.channel.send("This command does not exist.");

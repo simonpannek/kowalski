@@ -64,7 +64,7 @@ module.exports = {
 
                             const newCooldown = Date.now() + command.cooldown * 1000;
                             cooldownCommand.set(message.author.id, newCooldown);
-                            
+
                             // Remove cooldown from collection when expired
                             setTimeout(() => cooldownCommand.delete(message.author.id), newCooldown);
                         }
@@ -76,7 +76,7 @@ module.exports = {
                 }
 
                 // Print usage
-                let reply = "Could not execute the command.";// This is probably always true, because expired cooldowns should get removed automatically
+                let reply = "Could not execute the command.";
                 if (command.usage) {
                     reply += `\n\nExpected usage: \`${config.prefix}${command.name} ${command.usage}\``;
                 }

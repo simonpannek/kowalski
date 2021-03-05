@@ -1,5 +1,6 @@
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
+const {errorResponse} = require("../../modules/response");
 
 module.exports = {
     name: "reactions",
@@ -25,6 +26,7 @@ module.exports = {
                 }
             } catch (error) {
                 console.error("Something went wrong when trying to access the reactions: ", error);
+                return errorResponse(message);
             }
         } else {
             return message.channel.send(`Could not find this user.`);
