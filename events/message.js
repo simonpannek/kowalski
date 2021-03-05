@@ -17,7 +17,7 @@ commandFolders.forEach(folder => {
         command.category = folder;
 
         commands.set(command.name, command);
-        console.log(`Added command "${command.name}" in category "${folder}".`);
+        console.log(`Added command "${command.name}" in category "${command.category}".`);
     });
 });
 
