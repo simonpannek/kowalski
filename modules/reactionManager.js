@@ -1,4 +1,4 @@
-const {config, cooldowns, ignoreReactions, roleBoundariesCache} = require("./globals");
+const {config, reactionCooldowns, ignoreReactions, roleBoundariesCache} = require("./globals");
 const {users} = require("./database");
 
 module.exports = async (reaction, user, increment = true) => {
@@ -32,8 +32,8 @@ module.exports = async (reaction, user, increment = true) => {
             const currentCooldown = config.reactions.cooldown * 1000;
 
             // Check for cooldown
-            if (cooldowns.has(user.id)) {
-                const expirationTime = cooldowns.get(user.id) + currentCooldown;
+            if (reactionCooldowns.has(user.id)) {
+                const expirationTime = reactionCooldowns.get(user.id) + currentCooldown;
 
                 // This is probably always true, because expired cooldowns should get removed automatically
                 if (now < expirationTime) {
@@ -50,9 +50,9 @@ module.exports = async (reaction, user, increment = true) => {
             }
 
             // Update cooldown
-            cooldowns.set(user.id, now);
+            reactionCooldowns.set(user.id, now);
             // Remove cooldown from collection when expired
-            setTimeout(() => cooldowns.delete(user.id), currentCooldown);
+            setTimeout(() => reactionCooldowns.delete(user.id), currentCooldown);
         }
 
         try {

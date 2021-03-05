@@ -1,4 +1,4 @@
-const {cooldowns, roleBoundariesCache} = require("../../modules/globals");
+const {reactionCooldowns, roleBoundariesCache} = require("../../modules/globals");
 
 module.exports = {
     name: "cache",
@@ -12,9 +12,9 @@ module.exports = {
                 // Format the roles map into a string and print it
                 let cooldownsMap = "";
                 // TODO: Add guild id level to map
-                const cooldownsKeys = cooldowns.keys();
+                const cooldownsKeys = reactionCooldowns.keys();
                 for (let key of cooldownsKeys) {
-                    cooldownsMap += key + " ==> " + JSON.stringify(cooldowns.get(key)) + "\n";
+                    cooldownsMap += key + " ==> " + JSON.stringify(reactionCooldowns.get(key)) + "\n";
                 }
 
                 if (cooldownsMap) {
