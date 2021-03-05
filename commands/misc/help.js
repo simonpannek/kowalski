@@ -10,7 +10,7 @@ module.exports = {
 
         if (args.length) {
             // Get command
-            const command = commands.get(args[0]);
+            const command = commands.get(args[0].toLowerCase());
 
             // Check if command exists
             if (command && (!command.owner || config.owner === message.author.id)

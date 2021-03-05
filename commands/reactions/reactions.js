@@ -4,7 +4,7 @@ const {errorResponse} = require("../../modules/response");
 
 module.exports = {
     name: "reactions",
-    description: "Query the number of reactions a user has received.",
+    description: "Queries the number of reactions a user has received.",
     usage: "[?user]",
     cooldown: 10,
     async execute(message, args) {

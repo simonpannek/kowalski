@@ -1,48 +1,45 @@
-const {reactionCooldowns, roleBoundariesCache} = require("../../modules/globals");
+const {
+    commands,
+    reactionCooldowns,
+    commandCooldowns,
+    ignoreReactions,
+    roleBoundariesCache
+} = require("../../modules/globals");
 
 module.exports = {
     name: "cache",
     description: "Prints the content of a certain cache.",
-    usage: "[cooldowns|ignoreReactions|roleBoundaries]",
+    usage: "[commands|reactionCooldowns|commandCooldowns|ignoreReactions|roleBoundariesCache]",
     min_args: 1,
     owner: true,
     async execute(message, args) {
         switch (args[0]) {
-            case "cooldowns":
-                // Format the roles map into a string and print it
-                let cooldownsMap = "";
-                // TODO: Add guild id level to map
-                const cooldownsKeys = reactionCooldowns.keys();
-                for (let key of cooldownsKeys) {
-                    cooldownsMap += key + " ==> " + JSON.stringify(reactionCooldowns.get(key)) + "\n";
-                }
-
-                if (cooldownsMap) {
-                    await message.channel.send("```json\n" + cooldownsMap + "```", {split: true});
-                } else {
-                    await message.channel.send("Cache is currently empty.");
-                }
-                break;
-            case "roles":
-                // Format the roles map into a string and print it
-                let rolesMap = "";
-                const rolesKeys = roleBoundariesCache.keys();
-                for (let key of rolesKeys) {
-                    rolesMap += key + " ==> " + JSON.stringify(roleBoundariesCache.get(key)) + "\n";
-                }
-
-                if (rolesMap) {
-                    await message.channel.send("```json\n" + rolesMap + "```", {split: true});
-                } else {
-                    await message.channel.send("Cache is currently empty.");
-                }
-                break;
+            case "commands":
+                return printMap(message, commands);
+            case "reactionCooldowns":
+                return printMap(message, reactionCooldowns);
+            case "commandCooldowns":
+                return printMap(message, commandCooldowns);
+            case "ignoreReactions":
+                return printMap(message, ignoreReactions);
+            case "roleBoundariesCache":
+                return printMap(message, roleBoundariesCache);
             default:
                 throw new Error("Wrong argument.");
         }
     }
 };
 
-function printMap(map) {
+function printMap(message, map) {
+    const reply = [];
 
+    reply.push("```json");
+    for (let key of map.keys()) {
+        console.log("Type: " + typeof key);
+        console.log("Key: " + key);
+        reply.push(`${key} ==> ${JSON.stringify(map.get(key))}`);
+    }
+    reply.push("```");
+
+    return message.channel.send(reply.length > 2 ? reply : "Cache is currently empty.", {split: true});
 }

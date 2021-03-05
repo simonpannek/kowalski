@@ -2,8 +2,6 @@ const fs = require("fs");
 
 const {config, client} = require("./modules/globals");
 
-// TODO: Always sort roles cache
-
 // Get all event modules
 const eventFiles = fs.readdirSync("./events").filter(file => file.endsWith(".js"));
 

@@ -1,4 +1,4 @@
-const {config, reactionCooldowns, ignoreReactions, roleBoundariesCache} = require("./globals");
+const {Discord, config, reactionCooldowns, ignoreReactions, roleBoundariesCache} = require("./globals");
 const {users} = require("./database");
 
 module.exports = async (reaction, user, increment = true) => {
@@ -14,35 +14,35 @@ module.exports = async (reaction, user, increment = true) => {
     }
 
     const message = reaction.message;
-    const guildIgnore = ignoreReactions.get(message.guild.id);
+    const reactionsGuild = ignoreReactions.get(message.guild.id);
 
-    if (!increment && guildIgnore && guildIgnore.has(message.id)) {
+    if (!increment && reactionsGuild && reactionsGuild.has(message.id)) {
         // Reaction should get ignored
 
         // Delete entry from cache
-        guildIgnore.delete(message.id);
+        reactionsGuild.delete(message.id);
     } else if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
         && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
         // Score increasing/decreasing reaction
 
         // Check for timeout if it's an increment
         if (increment) {
-            // Get time vars
             const now = Date.now();
-            const currentCooldown = config.reactions.cooldown * 1000;
 
             // Check for cooldown
-            if (reactionCooldowns.has(user.id)) {
-                const expirationTime = reactionCooldowns.get(user.id) + currentCooldown;
-
+            let reactionGuild = reactionCooldowns.get(message.guild.id);
+            if (reactionGuild) {
+                const expirationTime = reactionGuild.get(user.id);
                 // This is probably always true, because expired cooldowns should get removed automatically
-                if (now < expirationTime) {
+                if (expirationTime && now < expirationTime) {
                     // Add message to ignored message, so removal event will get ignored
-                    if (!ignoreReactions.has(message.guild.id)) {
-                        ignoreReactions.set(message.guild.id, new Set());
+                    let ignoreGuild = ignoreReactions.get(message.guild.id);
+                    if (!ignoreGuild) {
+                        ignoreGuild = new Set();
+                        ignoreReactions.set(message.guild.id, ignoreGuild);
                     }
 
-                    ignoreReactions.get(message.guild.id).add(message.id);
+                    ignoreGuild.add(message.id);
 
                     // Remove reaction
                     return reaction.users.remove(user);
@@ -50,9 +50,16 @@ module.exports = async (reaction, user, increment = true) => {
             }
 
             // Update cooldown
-            reactionCooldowns.set(user.id, now);
+            if (!reactionGuild) {
+                reactionGuild = new Discord.Collection();
+                reactionCooldowns.set(message.guild.id, reactionGuild);
+            }
+
+            const currentCooldown = config.reactions.cooldown * 1000;
+            reactionGuild.set(user.id, now + currentCooldown);
+
             // Remove cooldown from collection when expired
-            setTimeout(() => reactionCooldowns.delete(user.id), currentCooldown);
+            setTimeout(() => reactionGuild.delete(user.id), currentCooldown);
         }
 
         try {
@@ -68,42 +75,9 @@ module.exports = async (reaction, user, increment = true) => {
             const currentScore = reacted.get("reactions");
             const newScore = await Math.max(currentScore + (increment ? 1 : -1), 0);
 
-            // Update entry and roles
+            // Update entry and roles if score has changed
             if (currentScore !== newScore) {
-                await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
-
-                // Get roles sorted ascending
-                const guildBoundaries = roleBoundariesCache.get(message.guild.id);
-                if (guildBoundaries) {
-                    const roles = guildBoundaries.sort((o1, o2) => o1.reactions - o2.reactions);
-                    // Determine role user should have
-                    let userRole;
-                    if (roles.length >= 1 && roles[0].reactions <= newScore) {
-                        userRole = roles[0];
-
-                        for (let role of roles) {
-                            if (role.reactions <= newScore) {
-                                userRole = role;
-                            } else {
-                                break;
-                            }
-                        }
-
-                        // Update role
-                        await message.member.roles.add(userRole.role);
-                    } else {
-                        userRole = null;
-                    }
-
-                    // Remove roles user should not have
-                    for (let role of roles) {
-                        // Check if member has a role they should not have
-                        if ((!userRole || role.role !== userRole.role) && message.member.roles.cache.has(role.role)) {
-                            // Remove role
-                            await message.member.roles.remove(role.role);
-                        }
-                    }
-                }
+                await updateScore(message, newScore);
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
@@ -113,10 +87,53 @@ module.exports = async (reaction, user, increment = true) => {
     if (!user.bot) {
         const userMember = reaction.message.guild.members.cache.get(user.id);
         if (userMember.roles.cache.size <= 1) {
-            const role = roleBoundariesCache.get(message.guild.id).sort((o1, o2) => o1.reactions - o2.reactions);
-            if (role && role.length >= 1) {
-                await userMember.roles.add(role[0].role);
+            // User has no roles
+
+            // Give user the starter role (role requiring less than 1 reactions) if it exists
+            const roleGuild = roleBoundariesCache.get(message.guild.id);
+            if (roleGuild) {
+                const role = roleGuild.find(r => r.reactions <= 0);
+                if (role) {
+                    return userMember.roles.add(role.role);
+                }
             }
         }
     }
 };
+
+async function updateScore(message, newScore) {
+    await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
+
+    // Get roles sorted ascending
+    const guildBoundaries = roleBoundariesCache.get(message.guild.id);
+    if (guildBoundaries) {
+        const roles = guildBoundaries.sort((o1, o2) => o1.reactions - o2.reactions);
+        // Determine role user should have
+        let userRole;
+        if (roles.length >= 1 && roles[0].reactions <= newScore) {
+            userRole = roles[0];
+
+            for (let role of roles) {
+                if (role.reactions <= newScore) {
+                    userRole = role;
+                } else {
+                    break;
+                }
+            }
+
+            // Update role
+            await message.member.roles.add(userRole.role);
+        } else {
+            userRole = null;
+        }
+
+        // Remove roles user should not have
+        for (let role of roles) {
+            // Check if member has a role they should not have
+            if ((!userRole || role.role !== userRole.role) && message.member.roles.cache.has(role.role)) {
+                // Remove role
+                await message.member.roles.remove(role.role);
+            }
+        }
+    }
+}

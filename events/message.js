@@ -38,11 +38,10 @@ module.exports = {
                 const cooldownCommand = commandCooldowns.get(command.name);
 
                 if (cooldownCommand) {
-                    const now = Date.now();
                     const currentCooldown = cooldownCommand.get(message.author.id);
 
                     // This is probably always true, because expired cooldowns should get removed automatically
-                    if (currentCooldown && now < currentCooldown) {
+                    if (currentCooldown && Date.now() < currentCooldown) {
                         return cooldownResponse(message);
                     }
                 }
@@ -62,8 +61,8 @@ module.exports = {
                                 commandCooldowns.set(command.name, cooldownCommand);
                             }
 
-                            const newCooldown = Date.now() + command.cooldown * 1000;
-                            cooldownCommand.set(message.author.id, newCooldown);
+                            const newCooldown = command.cooldown * 1000;
+                            cooldownCommand.set(message.author.id, Date.now() + newCooldown);
 
                             // Remove cooldown from collection when expired
                             setTimeout(() => cooldownCommand.delete(message.author.id), newCooldown);
