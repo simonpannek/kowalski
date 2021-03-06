@@ -40,7 +40,7 @@ async function printMap(message, map) {
 
     reply = arraySplit(reply);
 
-    if (reply) {
+    if (reply && reply.length > 0) {
         for (let line of reply) {
             await message.channel.send(line, {split:true});
         }
