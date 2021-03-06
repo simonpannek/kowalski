@@ -1,6 +1,7 @@
 const {roleBoundaries} = require("../../modules/globals");
 const {roles} = require("../../modules/database");
 const {roleFromMention} = require("../../modules/parser");
+const {errorResponse} = require("../../modules/response");
 
 module.exports = {
     name: "role",
@@ -31,6 +32,7 @@ module.exports = {
                         }
                     } catch (error) {
                         console.error("Something went wrong when trying to create the entry: ", error);
+                        return errorResponse(message);
                     }
                     break;
                 case "remove":
@@ -50,6 +52,7 @@ module.exports = {
                         }
                     } catch (error) {
                         console.error("Something went wrong when trying to delete the entry: ", error);
+                        return errorResponse(message);
                     }
                     break;
                 default:

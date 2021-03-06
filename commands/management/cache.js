@@ -5,6 +5,7 @@ const {
     ignoreReactions,
     roleBoundaries
 } = require("../../modules/globals");
+const {arraySplit} = require("../../modules/parser");
 
 module.exports = {
     name: "cache",
@@ -30,16 +31,20 @@ module.exports = {
     }
 };
 
-function printMap(message, map) {
-    const reply = [];
+async function printMap(message, map) {
+    let reply = [];
 
-    reply.push("```json");
     for (let key of map.keys()) {
-        console.log("Type: " + typeof key);
-        console.log("Key: " + key);
         reply.push(`${key} ==> ${JSON.stringify(map.get(key))}`);
     }
-    reply.push("```");
 
-    return message.channel.send(reply.length > 2 ? reply : "Cache is currently empty.", {split: true});
+    reply = arraySplit(reply);
+
+    if (reply) {
+        for (let line of reply) {
+            await message.channel.send(line, {split:true});
+        }
+    } else {
+        return message.channel.send("Cache is currently empty.");
+    }
 }
