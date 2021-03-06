@@ -86,8 +86,8 @@ module.exports = async (reaction, user, increment = true) => {
 
     if (!user.bot) {
         const userMember = reaction.message.guild.members.cache.get(user.id);
-        if (userMember.roles.cache.size <= 1) {
-            // User has no roles
+        if (userMember && userMember.roles.cache.size <= 1) {
+            // User is on the server and has no roles
 
             // Give user the starter role (role requiring less than 1 reactions) if it exists
             const roleGuild = roleBoundaries.get(message.guild.id);
