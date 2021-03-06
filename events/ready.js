@@ -1,4 +1,4 @@
-const {client, roleBoundariesCache} = require("../modules/globals");
+const {client, roleBoundaries} = require("../modules/globals");
 const {roles, users} = require("../modules/database");
 
 module.exports = {
@@ -26,12 +26,12 @@ module.exports = {
                 await currentRole.destroy();
             } else {
                 // Create new cache entry if guild is new
-                if (!roleBoundariesCache.has(guild)) {
-                    roleBoundariesCache.set(guild, []);
+                if (!roleBoundaries.has(guild)) {
+                    roleBoundaries.set(guild, []);
                 }
 
                 // Add role to collection
-                roleBoundariesCache.get(guild).push({
+                roleBoundaries.get(guild).push({
                     role: currentRole.get("role"),
                     reactions: currentRole.get("reactions")
                 });

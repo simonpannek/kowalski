@@ -1,4 +1,4 @@
-const {ignoreReactions, roleBoundariesCache} = require("../modules/globals");
+const {ignoreReactions, roleBoundaries} = require("../modules/globals");
 const {roles, users} = require("../modules/database");
 
 module.exports = {
@@ -13,8 +13,8 @@ module.exports = {
             ignoreReactions.delete(guild.id);
         }
 
-        if (roleBoundariesCache.has(guild.id)) {
-            roleBoundariesCache.delete(guild.id);
+        if (roleBoundaries.has(guild.id)) {
+            roleBoundaries.delete(guild.id);
         }
     }
 };

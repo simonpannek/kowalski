@@ -1,4 +1,4 @@
-const {roleBoundariesCache} = require("../../modules/globals");
+const {roleBoundaries} = require("../../modules/globals");
 const {roles} = require("../../modules/database");
 const {roleFromMention} = require("../../modules/parser");
 
@@ -60,12 +60,12 @@ module.exports = {
         }
 
         // Reload roles
-        roleBoundariesCache.set(message.guild.id, []);
+        roleBoundaries.set(message.guild.id, []);
 
         const updatedRoles = await roles.findAll({where: {guild: message.guild.id}});
         for (let currentRole of updatedRoles) {
             // Add role to collection
-            roleBoundariesCache.get(message.guild.id).push({
+            roleBoundaries.get(message.guild.id).push({
                 role: currentRole.get("role"),
                 reactions: currentRole.get("reactions")
             });

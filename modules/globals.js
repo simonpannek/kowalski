@@ -13,5 +13,5 @@ module.exports = {
     // Messages, where the next removal-reaction event should get ignored
     ignoreReactions: new Discord.Collection(),
     // Caches the roles table so we do not have to query the database all the time
-    roleBoundariesCache: new Discord.Collection()
+    roleBoundaries: new Discord.Collection()
 };

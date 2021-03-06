@@ -1,4 +1,4 @@
-const {Discord, config, reactionCooldowns, ignoreReactions, roleBoundariesCache} = require("./globals");
+const {Discord, config, reactionCooldowns, ignoreReactions, roleBoundaries} = require("./globals");
 const {users} = require("./database");
 
 module.exports = async (reaction, user, increment = true) => {
@@ -90,7 +90,7 @@ module.exports = async (reaction, user, increment = true) => {
             // User has no roles
 
             // Give user the starter role (role requiring less than 1 reactions) if it exists
-            const roleGuild = roleBoundariesCache.get(message.guild.id);
+            const roleGuild = roleBoundaries.get(message.guild.id);
             if (roleGuild) {
                 const role = roleGuild.find(r => r.reactions <= 0);
                 if (role) {
@@ -105,7 +105,7 @@ async function updateScore(message, newScore) {
     await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
 
     // Get roles sorted ascending
-    const guildBoundaries = roleBoundariesCache.get(message.guild.id);
+    const guildBoundaries = roleBoundaries.get(message.guild.id);
     if (guildBoundaries) {
         const roles = guildBoundaries.sort((o1, o2) => o1.reactions - o2.reactions);
         // Determine role user should have
