@@ -24,7 +24,7 @@ module.exports = {
                 return errorResponse(message);
             }
         } else {
-            return message.channel.send(`Could not find this user.`);
+            return message.channel.send("Could not find this user.");
         }
     }
 };

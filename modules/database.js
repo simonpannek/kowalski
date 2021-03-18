@@ -3,7 +3,7 @@ const Sequelize = require("sequelize");
 const sequelizeInstance = new Sequelize.Sequelize({
     host: "localhost",
     dialect: "sqlite",
-    logging: false,
+    //logging: false,
     storage: "database.sqlite"
 });
 
@@ -24,6 +24,34 @@ module.exports = {
         role: {
             type: Sequelize.STRING,
             allowNull: false
+        }
+    }),
+    reactionroles: sequelizeInstance.define("reactionroles", {
+        // Guild id
+        guild: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Channel id
+        channel: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Message id
+        message: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Emoji
+        emoji: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Role id
+        role: {
+            type: Sequelize.STRING,
+            allowNull: false,
+            primaryKey: true
         }
     }),
     users: sequelizeInstance.define("users", {

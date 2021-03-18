@@ -59,7 +59,7 @@ module.exports = {
                     throw new Error("Invalid arguments.");
             }
         } else {
-            return message.channel.send(`Could not find this role.`);
+            return message.channel.send("Could not find this role.");
         }
 
         // Reload roles

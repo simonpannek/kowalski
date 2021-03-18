@@ -29,6 +29,21 @@ module.exports = {
             return guild.roles.cache.get(mention);
         }
     },
+    // Parses a message from the id
+    async messageFromMention(mention, channel) {
+        if (mention && channel) {
+            try {
+                // Return fetched message
+                return await channel.messages.fetch(mention);
+            } catch (ignored) {
+                // Invalid channel
+            }
+        }
+    },
+    // Parses the emoji string from a emoji object
+    stringFromEmoji(emoji) {
+        return emoji.id === null ? emoji.name : `<:${emoji.name}:${emoji.id}>`;
+    },
     // Parses an array of strings into a json wrapped array of arrays of strings, which fit into the max message size
     arraySplit(message = [""]) {
         // Static vars

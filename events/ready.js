@@ -1,12 +1,17 @@
 const {client, roleBoundaries} = require("../modules/globals");
-const {roles, users} = require("../modules/database");
+const {roles, reactionroles, users} = require("../modules/database");
+const {messageFromMention} = require("../modules/parser");
 
 module.exports = {
     name: "ready",
     once: true,
     async execute() {
+        // TODO: Instead of message and serverMessage --> messageId and message
+        // TODO: Outsource method for cleanup?
+
         // Sync database tables
         await roles.sync();
+        await reactionroles.sync();
         await users.sync();
         console.log("Finished syncing database tables.");
 
@@ -38,6 +43,41 @@ module.exports = {
             }
         }
         console.log("Finished cleaning up and caching roles table.");
+
+        // TODO: Also clear when message was removed / channel was removed
+
+        // Get all entries of the reactionroles table
+        const startupReactionRoles = await reactionroles.findAll();
+        for (let currentRole of startupReactionRoles) {
+            // Get guild, channel and server
+            const guild = currentRole.get("guild");
+            const channel = currentRole.get("channel");
+            const server = client.guilds.cache.get(guild);
+            const serverChannel = server.channels.cache.get(channel);
+
+            if (!guild || !channel || !server || !serverChannel) {
+                // Remove user entry if bot was removed from channel or server
+                await currentRole.destroy();
+            } else {
+                // Try to get message
+                const message = currentRole.get("message");
+                const serverMessage = await messageFromMention(message, serverChannel);
+
+                if (!message || !serverMessage) {
+                    // Remove user entry if message was removed
+                    await currentRole.destroy();
+                } else {
+                    // Try to add the emoji to the message, in case it was removed
+                    try {
+                        // React to message
+                        await serverMessage.react(currentRole.get("emoji"));
+                    } catch (ignored) {
+                        // Reaction failed, continue anyway
+                    }
+                }
+            }
+        }
+        console.log("Finished cleaning up reactionroles table.");
 
         // Get all entries of the users table
         const startupUsers = await users.findAll();

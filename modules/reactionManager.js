@@ -2,17 +2,6 @@ const {Discord, config, reactionCooldowns, ignoreReactions, roleBoundaries} = re
 const {users} = require("./database");
 
 module.exports = async (reaction, user, increment = true) => {
-    // Check if the reaction is partial
-    if (reaction.partial) {
-        // Try to fetch the information
-        try {
-            await reaction.fetch();
-        } catch (error) {
-            console.error("Something went wrong when fetching the message a user reacted to: ", error);
-            return;
-        }
-    }
-
     const message = reaction.message;
     const reactionsGuild = ignoreReactions.get(message.guild.id);
 
@@ -24,6 +13,7 @@ module.exports = async (reaction, user, increment = true) => {
     } else if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
         && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
         // Score increasing/decreasing reaction
+        // TODO: Support multiple/per server emojis
 
         // Check for timeout if it's an increment
         if (increment) {
@@ -38,6 +28,7 @@ module.exports = async (reaction, user, increment = true) => {
                     // Add message to ignored message, so removal event will get ignored
                     let ignoreGuild = ignoreReactions.get(message.guild.id);
                     if (!ignoreGuild) {
+                        // TODO: Try List instead of set to allow multiple entries
                         ignoreGuild = new Set();
                         ignoreReactions.set(message.guild.id, ignoreGuild);
                     }
@@ -84,6 +75,7 @@ module.exports = async (reaction, user, increment = true) => {
         }
     }
 
+    // TODO: Replace with reactionrole
     if (!user.bot) {
         const userMember = reaction.message.guild.members.cache.get(user.id);
         if (userMember && userMember.roles.cache.size <= 1) {
