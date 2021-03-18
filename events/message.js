@@ -50,7 +50,7 @@ module.exports = {
                 if (!command.min_args || args.length >= command.min_args) {
                     // Try to execute the command
                     try {
-                        await command.execute(message, args);
+                        const answer = await command.execute(message, args);
 
                         // Check if command has a cooldown
                         if (command.cooldown) {
@@ -68,9 +68,17 @@ module.exports = {
                             setTimeout(() => cooldownCommand.delete(message.author.id), newCooldown);
                         }
 
+                        // Check if answer should get removed
+                        if (command.clear_time && answer && answer.delete) {
+                            setTimeout(() => {
+                                answer.delete();
+                            }, command.clear_time * 1000);
+                        }
+
                         return;
                     } catch (ignored) {
                         // Command failed to execute (usually because of wrong usage)
+                        console.log(ignored);
                     }
                 }
 

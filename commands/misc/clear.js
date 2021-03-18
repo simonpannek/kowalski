@@ -3,6 +3,7 @@ module.exports = {
     description: "Deletes a certain amount of messages.",
     usage: "[number]",
     min_args: 1,
+    clear_time: 3,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         // Check if argument is a number
@@ -17,9 +18,7 @@ module.exports = {
             // Delete messages
             const deleted = await message.channel.bulkDelete(num + 1, true);
 
-            return message.channel.send(`Cleared ${deleted.size - 1} messages.`).then(sent => setTimeout(() => {
-                sent.delete();
-            }, 2500));
+            return message.channel.send(`Cleared ${deleted.size - 1} messages.`);
         } else {
             return message.channel.send("Number has to be between 1 and 100.")
         }
