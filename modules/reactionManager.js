@@ -10,7 +10,7 @@ module.exports = async (reaction, user, increment = true) => {
 
         // Delete entry from cache
         reactionsGuild.delete(message.id);
-    } else if (reaction.emoji.name === config.reactions.emoji && !user.bot && !message.author.bot
+    } else if (reaction.emoji.name === config.reactions.emoji && !message.author.bot
         && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
         // Score increasing/decreasing reaction
         // TODO: Support multiple/per server emojis
@@ -72,23 +72,6 @@ module.exports = async (reaction, user, increment = true) => {
             }
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
-        }
-    }
-
-    // TODO: Replace with reactionrole
-    if (!user.bot) {
-        const userMember = reaction.message.guild.members.cache.get(user.id);
-        if (userMember && userMember.roles.cache.size <= 1) {
-            // User is on the server and has no roles
-
-            // Give user the starter role (role requiring less than 1 reactions) if it exists
-            const roleGuild = roleBoundaries.get(message.guild.id);
-            if (roleGuild) {
-                const role = roleGuild.find(r => r.reactions <= 0);
-                if (role) {
-                    return userMember.roles.add(role.role);
-                }
-            }
         }
     }
 };

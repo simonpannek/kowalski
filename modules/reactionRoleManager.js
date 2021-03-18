@@ -21,7 +21,7 @@ module.exports = async (reaction, user, increment = true) => {
     }
 
     // Check if roles have to get modified
-    if (roles && roles.length > 0 && !user.bot) {
+    if (roles && roles.length > 0) {
         // Find member of reacting user
         const userMember = reaction.message.guild.members.cache.get(user.id);
 
