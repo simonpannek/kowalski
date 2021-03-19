@@ -78,7 +78,6 @@ module.exports = {
                         return;
                     } catch (ignored) {
                         // Command failed to execute (usually because of wrong usage)
-                        console.log(ignored);
                     }
                 }
 
