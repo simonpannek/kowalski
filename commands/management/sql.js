@@ -21,7 +21,7 @@ module.exports = {
 
                 // Parse result
                 let reply = [];
-                if (results[0].length) {
+                if (results[0] && results[0].length) {
                     results[0].forEach(r => reply.push(JSON.stringify(r)));
                     reply = arraySplit(reply);
                 }
