@@ -1,4 +1,4 @@
-const {sequelize, users} = require("../../modules/database");
+const {sequelize} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
 const {errorResponse} = require("../../modules/response");
 
@@ -16,16 +16,23 @@ module.exports = {
         }
 
         if (user) {
-            // Try to get the reactions from the database
+            // Try to get the rank from the database
             try {
-                const rank = await users.findOne({
-                    where: {guild: message.guild.id, user: user.id},
-                    attributes: [
-                        [sequelize.literal("(RANK() OVER (PARTITION BY 'guild' ORDER BY reactions DESC))"), "rank"]
-                    ]
+                // Custom SQL query to query the rank of a user
+                const rank = await sequelize
+                    .query(`SELECT ranked FROM users u
+                                LEFT OUTER JOIN (
+                                    SELECT user, RANK() OVER (ORDER BY reactions DESC) AS ranked
+                                    FROM users
+                                    WHERE guild = $1
+                                ) AS r ON r.user = u.user
+                                WHERE u.user = $2`, {
+                    bind: [message.guild.id, user.id],
+                    type: sequelize.QueryTypes.SELECT
                 });
-                if (rank) {
-                    return message.channel.send(`The user ${user.tag} is ranked **number ${rank.get("rank")}**.`);
+
+                if (rank && rank.length > 0) {
+                    return message.channel.send(`The user ${user.tag} is ranked **number ${rank[0].ranked}**.`);
                 } else {
                     return message.channel.send(`Could not find an entry for the user ${user.tag}.`);
                 }
