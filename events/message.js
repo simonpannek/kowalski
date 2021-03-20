@@ -22,6 +22,9 @@ commandFolders.forEach(folder => {
     });
 });
 
+// TODO: Check how many entries there are in the reactionrole/emoji databases
+// TODO: Avoid crash if no write permission and check/don't log missing access
+
 module.exports = {
     name: "message",
     async execute(message) {
@@ -70,8 +73,12 @@ module.exports = {
 
                         // Check if answer should get removed
                         if (command.clear_time && answer && answer.delete) {
-                            setTimeout(() => {
-                                answer.delete();
+                            setTimeout(async () => {
+                                try {
+                                    await answer.delete();
+                                } catch (ignored) {
+                                    // Message probably was already deleted
+                                }
                             }, command.clear_time * 1000);
                         }
 
@@ -82,6 +89,7 @@ module.exports = {
                 }
 
                 // Print usage
+                // TODO: Catch error and print custom failure message (to avoid cooldowns)
                 let reply = "Could not execute the command.";
                 if (command.usage) {
                     reply += `\n\nExpected usage: \`${config.prefix}${command.name} ${command.usage}\``;

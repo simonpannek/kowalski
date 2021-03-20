@@ -3,14 +3,14 @@ const {
     reactionCooldowns,
     commandCooldowns,
     ignoreReactions,
-    roleBoundaries
+    lastUpdate
 } = require("../../modules/globals");
 const {arraySplit} = require("../../modules/parser");
 
 module.exports = {
     name: "cache",
     description: "Prints the content of a certain cache.",
-    usage: "[commands|reactionCooldowns|commandCooldowns|ignoreReactions|roleBoundaries]",
+    usage: "[commands|reactionCooldowns|commandCooldowns|ignoreReactions|lastUpdate]",
     min_args: 1,
     owner: true,
     async execute(message, args) {
@@ -23,8 +23,8 @@ module.exports = {
                 return printMap(message, commandCooldowns);
             case "ignoreReactions":
                 return printMap(message, ignoreReactions);
-            case "roleBoundaries":
-                return printMap(message, roleBoundaries);
+            case "lastUpdate":
+                return printMap(message, lastUpdate);
             default:
                 throw new Error("Wrong argument.");
         }

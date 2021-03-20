@@ -1,4 +1,3 @@
-const {roleBoundaries} = require("../../modules/globals");
 const {roles} = require("../../modules/database");
 const {roleFromMention} = require("../../modules/parser");
 const {errorResponse} = require("../../modules/response");
@@ -61,18 +60,6 @@ module.exports = {
             }
         } else {
             return message.channel.send("Could not find this role.");
-        }
-
-        // Reload roles
-        roleBoundaries.set(message.guild.id, []);
-
-        const updatedRoles = await roles.findAll({where: {guild: message.guild.id}});
-        for (let currentRole of updatedRoles) {
-            // Add role to collection
-            roleBoundaries.get(message.guild.id).push({
-                role: currentRole.get("role"),
-                reactions: currentRole.get("reactions")
-            });
         }
     }
 };

@@ -31,7 +31,7 @@ module.exports = {
                     type: sequelize.QueryTypes.SELECT
                 });
 
-                if (rank && rank.length > 0) {
+                if (rank && rank.length > 0 && rank[0].ranked !== null) {
                     return message.channel.send(`The user ${user.tag} is ranked **number ${rank[0].ranked}**.`);
                 } else {
                     return message.channel.send(`Could not find an entry for the user ${user.tag}.`);

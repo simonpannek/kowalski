@@ -13,30 +13,34 @@ module.exports = {
         // Parse message
         const reactionMessage = await messageFromMention(args[1], message.channel);
 
-        if (reactionMessage) {
-            switch (args[0].toLowerCase()) {
-                // TODO: Add list command
-                case "add":
-                    // Check if enough arguments for the add command are given
-                    if (args.length <= 3) {
-                        throw new Error("Invalid arguments.");
-                    }
-
-                    // Get role
-                    const role = roleFromMention(args[3], message.guild);
-                    if (role) {
-                        return addReactionRole(message, reactionMessage, args[2], role);
-                    } else {
-                        return message.channel.send("Could not find this role.");
-                    }
-                // TODO: Make emoji and role optional for remove command
-                case "remove":
-                    return removeReactionRole(message, reactionMessage, args[2]);
-                default:
-                    throw new Error("Invalid arguments.");
-            }
-        } else {
+        if (!reactionMessage) {
             return message.channel.send("Could not find this message.");
+        }
+
+        if (!reactionMessage.author.bot) {
+            return message.channel.send("Author of message must be a bot.");
+        }
+
+        switch (args[0].toLowerCase()) {
+            // TODO: Add list command
+            case "add":
+                // Check if enough arguments for the add command are given
+                if (args.length <= 3) {
+                    throw new Error("Invalid arguments.");
+                }
+
+                // Get role
+                const role = roleFromMention(args[3], message.guild);
+                if (role) {
+                    return addReactionRole(message, reactionMessage, args[2], role);
+                } else {
+                    return message.channel.send("Could not find this role.");
+                }
+            // TODO: Make emoji and role optional for remove command
+            case "remove":
+                return removeReactionRole(message, reactionMessage, args[2]);
+            default:
+                throw new Error("Invalid arguments.");
         }
     }
 };

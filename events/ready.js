@@ -1,4 +1,4 @@
-const {client, roleBoundaries} = require("../modules/globals");
+const {client} = require("../modules/globals");
 const {roles, reactionroles, users} = require("../modules/database");
 const {messageFromMention} = require("../modules/parser");
 
@@ -19,22 +19,7 @@ module.exports = {
         }
         console.log("Finished fetching users.");
 
-        // TODO: Remove logic here as soon as cache gets removed
-
-        await cleanDatabase(await roles.findAll(), async (row, guild) => {
-            // Create new cache entry if guild is new
-            if (!roleBoundaries.has(guild)) {
-                roleBoundaries.set(guild, []);
-            }
-
-            // Add role to collection
-            roleBoundaries.get(guild).push({
-                role: row.get("role"),
-                reactions: row.get("reactions")
-            });
-
-            return true;
-        });
+        await cleanDatabase(await roles.findAll(), async () => true);
         console.log("Finished cleaning up and caching roles table.");
 
         // TODO: Also clear when message was removed / channel was removed
