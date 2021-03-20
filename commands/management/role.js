@@ -12,11 +12,12 @@ module.exports = {
     async execute(message, args) {
         const role = roleFromMention(args[1], message.guild);
         if (role) {
-            // Parse number
-            const parsed = parseInt(args[2]);
-            if (isNaN(parsed)) {
+            // Check if argument is a number
+            if (isNaN(args[2])) {
                 throw new Error("Invalid arguments.");
             }
+
+            const num = Number(args[2]);
 
             switch (args[0].toLowerCase()) {
                 case "add":
@@ -24,7 +25,7 @@ module.exports = {
                     try {
                         const created = await roles.create({
                             guild: message.guild.id,
-                            reactions: parsed,
+                            reactions: num,
                             role: role.id
                         });
                         if (created) {
@@ -41,7 +42,7 @@ module.exports = {
                         const deleted = await roles.destroy({
                             where: {
                                 guild: message.guild.id,
-                                reactions: parsed,
+                                reactions: num,
                                 role: role.id
                             }
                         });
