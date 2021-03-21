@@ -1,6 +1,6 @@
 const {client} = require("../modules/globals");
 const {roles, reactionroles, users, emojis} = require("../modules/database");
-const {messageFromId} = require("../modules/parser");
+const {messageFromId, stringToEmoji} = require("../modules/parser");
 
 module.exports = {
     name: "ready",
@@ -62,7 +62,12 @@ module.exports = {
         });
         console.log("Finished cleaning up users table.");
 
-        await cleanDatabase(await emojis.findAll(), async () => true);
+        // TODO: Clear when emoji gets removed?
+
+        await cleanDatabase(await emojis.findAll(), async row => {
+            // Row is valid if emoji is still available for the bot
+            return stringToEmoji(row.get("emoji"));
+        });
         console.log("Finished cleaning up emojis table.");
 
         // Set custom status

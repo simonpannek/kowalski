@@ -29,7 +29,10 @@ module.exports = {
         }
 
         // Get entry of user
-        const userRow = await users.findOne({where: {guild: message.guild.id, user: user.id}});
+        const userRow = await users.findOne({
+            where: {guild: message.guild.id, user: user.id},
+            attributes: ["reactions"]
+        });
 
         // Check if user has an entry
         if (!userRow) {
@@ -37,7 +40,10 @@ module.exports = {
         }
 
         // Get entry of message author
-        const authorRow = await users.findOne({where: {guild: message.guild.id, user: author.id}});
+        const authorRow = await users.findOne({
+            where: {guild: message.guild.id, user: author.id},
+            attributes: ["reactions"]
+        });
 
         // Check if author has enough reactions
         if (!authorRow || authorRow.get("reactions") < num) {
@@ -53,7 +59,7 @@ module.exports = {
         });
 
         // Update user
-        const toSend =  Math.floor(num / 2);
+        const toSend = Math.floor(num / 2);
         await users.update({reactions: userRow.get("reactions") + toSend}, {
             where: {
                 guild: message.guild.id,

@@ -14,7 +14,8 @@ module.exports = async (reaction, user, increment = true) => {
                 channel: message.channel.id,
                 message: message.id,
                 emoji: stringFromEmoji(reaction.emoji)
-            }
+            },
+            attributes: ["user", "role"],
         });
     } catch (error) {
         console.error("Something went wrong when trying to query the database entry: ", error);

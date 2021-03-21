@@ -25,7 +25,7 @@ module.exports = {
             type: Sequelize.STRING,
             allowNull: false
         }
-    }),
+    }, {timestamps: false}),
     reactionroles: sequelizeInstance.define("reactionroles", {
         // Guild id
         guild: {
@@ -53,7 +53,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true
         }
-    }),
+    }, {timestamps: false}),
     users: sequelizeInstance.define("users", {
         // Guild id
         guild: {
@@ -70,7 +70,7 @@ module.exports = {
             type: Sequelize.INTEGER,
             defaultValue: 0
         }
-    }),
+    }, {timestamps: false}),
     emojis: sequelizeInstance.define("emojis", {
         // Guild id
         guild: {
@@ -82,5 +82,5 @@ module.exports = {
             type: Sequelize.STRING,
             primaryKey: true
         }
-    })
+    }, {timestamps: false})
 };

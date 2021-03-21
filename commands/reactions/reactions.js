@@ -18,7 +18,10 @@ module.exports = {
         if (user) {
             // Try to get the reactions from the database
             try {
-                const reacted = await users.findOne({where: {guild: message.guild.id, user: user.id}});
+                const reacted = await users.findOne({
+                    where: {guild: message.guild.id, user: user.id},
+                    attributes: ["reactions"],
+                });
                 if (reacted) {
                     return message.channel.send(`The user ${user.tag} has **${reacted.get("reactions")} reaction(s)**.`);
                 } else {

@@ -7,7 +7,10 @@ module.exports = async (reaction, user, increment = true) => {
     const message = reaction.message;
 
     // Check if bot should listen to the emoji
-    const row = await emojis.findOne({where: {guild: message.guild.id, emoji: stringFromEmoji(reaction.emoji)}});
+    const row = await emojis.findOne({
+        where: {guild: message.guild.id, emoji: stringFromEmoji(reaction.emoji)},
+        attributes: ["emoji"]
+    });
 
     if (!row) {
         // Ignore reaction
@@ -23,7 +26,6 @@ module.exports = async (reaction, user, increment = true) => {
         return reactionsGuild.delete(message.id);
     } else {
         // Score increasing/decreasing reaction
-        // TODO: Support multiple/per server emojis
 
         // Check for timeout if it's an increment
         if (increment) {
@@ -65,14 +67,15 @@ module.exports = async (reaction, user, increment = true) => {
 
         try {
             // Get database entry
-            let reacted = await users.findOne({where: {guild: message.guild.id, user: message.author.id}});
+            let reacted = await users.findOne({
+                where: {guild: message.guild.id, user: message.author.id},
+                attributes: ["user"]
+            });
 
             if (!reacted) {
                 // User does not exist, create new row
                 reacted = await users.create({guild: message.guild.id, user: message.author.id});
             }
-
-            const oldScore = await reacted.get("reactions");
 
             // Update score
             if (increment) {
@@ -83,13 +86,8 @@ module.exports = async (reaction, user, increment = true) => {
                 });
             }
 
-            // Reload score
-            await reacted.reload();
-
-            // Update roles for user if score changed
-            if (oldScore !== reacted.get("reactions")) {
-                await updateRole(message, reacted.get("reactions"));
-            }
+            // Update role
+            await updateRole(message, reacted.get("reactions"));
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
         }
@@ -124,6 +122,7 @@ async function updateRole(message, newScore) {
         // Get roles sorted ascending
         const guildBoundaries = await roles.findAll({
             where: {guild: message.guild.id},
+            attributes: ["reactions", "role"],
             order: [["reactions"]]
         });
 

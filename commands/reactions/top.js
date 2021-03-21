@@ -14,6 +14,7 @@ module.exports = {
                 where: {
                     guild: message.guild.id
                 },
+                attributes: ["user", "reactions"],
                 order: [["reactions", "DESC"]],
                 limit: 10
             });
