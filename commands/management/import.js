@@ -46,7 +46,7 @@ module.exports = {
             try {
                 await table.bulkCreate(objects);
             } catch (error) {
-                console.log(error);
+                console.error("Something went wrong when trying to execute the query: ", error);
                 return errorResponse(message);
             }
         }

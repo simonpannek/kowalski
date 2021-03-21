@@ -17,13 +17,14 @@ module.exports = async (reaction, user, increment = true) => {
         return;
     }
 
-    const reactionsGuild = ignoreReactions.get(message.guild.id);
+    const ignoreGuild = ignoreReactions.get(message.guild.id);
 
-    if (!increment && reactionsGuild && reactionsGuild.has(message.id)) {
+    if (!increment && ignoreGuild && ignoreGuild.includes(message.id)) {
         // Reaction should get ignored
 
         // Delete entry from cache
-        return reactionsGuild.delete(message.id);
+        const index = ignoreGuild.findIndex(i => i === message.id);
+        return ignoreGuild.splice(index, 1);
     } else {
         // Score increasing/decreasing reaction
 
@@ -40,12 +41,11 @@ module.exports = async (reaction, user, increment = true) => {
                     // Add message to ignored message, so removal event will get ignored
                     let ignoreGuild = ignoreReactions.get(message.guild.id);
                     if (!ignoreGuild) {
-                        // TODO: Try List instead of set to allow multiple entries
-                        ignoreGuild = new Set();
+                        ignoreGuild = [];
                         ignoreReactions.set(message.guild.id, ignoreGuild);
                     }
 
-                    ignoreGuild.add(message.id);
+                    ignoreGuild.push(message.id);
 
                     // Remove reaction
                     return reaction.users.remove(user);
@@ -68,8 +68,7 @@ module.exports = async (reaction, user, increment = true) => {
         try {
             // Get database entry
             let reacted = await users.findOne({
-                where: {guild: message.guild.id, user: message.author.id},
-                attributes: ["user"]
+                where: {guild: message.guild.id, user: message.author.id}
             });
 
             if (!reacted) {
@@ -87,7 +86,7 @@ module.exports = async (reaction, user, increment = true) => {
             }
 
             // Update role
-            await updateRole(message, reacted.get("reactions"));
+            await updateRole(message, Math.max(reacted.get("reactions") + (increment ? 1 : -1), 0));
         } catch (error) {
             console.error("Something went wrong when trying to update the database entry: ", error);
         }
