@@ -1,3 +1,5 @@
+const emojiRegex = require("emoji-regex/RGI_Emoji");
+
 const {client} = require("./globals");
 
 module.exports = {
@@ -30,18 +32,42 @@ module.exports = {
         }
     },
     // Parses a message from the id
-    async messageFromMention(mention, channel) {
-        if (mention && channel) {
+    async messageFromId(id, channel) {
+        if (id && channel) {
             try {
                 // Return fetched message
-                return await channel.messages.fetch(mention);
+                return await channel.messages.fetch(id);
             } catch (ignored) {
                 // Invalid channel
             }
         }
     },
+    // Parses the emoji object from the emoji string
+    stringToEmoji(string) {
+        if (string) {
+            // Try to find an available guild emoji
+            const guildEmoji = client.emojis.cache.find(emoji => emoji.available
+                && string === (emoji.id === null ? emoji.name : `<:${emoji.name}:${emoji.id}>`));
+
+            if (guildEmoji) {
+                return guildEmoji;
+            }
+
+            // Try to find an available unicode emoji
+            const unicodeEmoji = emojiRegex().exec(string);
+
+            if (unicodeEmoji && unicodeEmoji.length > 0) {
+                return unicodeEmoji[0];
+            }
+        }
+    },
     // Parses the emoji string from a emoji object
     stringFromEmoji(emoji) {
+        // Check if emoji is a string already
+        if (typeof emoji === "string") {
+            return emoji;
+        }
+
         return emoji.id === null ? emoji.name : `<:${emoji.name}:${emoji.id}>`;
     },
     // Parses an array of strings into a json wrapped array of arrays of strings, which fit into the max message size

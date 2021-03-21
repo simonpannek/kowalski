@@ -1,18 +1,27 @@
 const {Op} = require("sequelize");
 const {Discord, config, reactionCooldowns, ignoreReactions, lastUpdate} = require("./globals");
-const {users, roles} = require("./database");
+const {users, roles, emojis} = require("./database");
+const {stringFromEmoji} = require("./parser");
 
 module.exports = async (reaction, user, increment = true) => {
     const message = reaction.message;
+
+    // Check if bot should listen to the emoji
+    const row = await emojis.findOne({where: {guild: message.guild.id, emoji: stringFromEmoji(reaction.emoji)}});
+
+    if (!row) {
+        // Ignore reaction
+        return;
+    }
+
     const reactionsGuild = ignoreReactions.get(message.guild.id);
 
     if (!increment && reactionsGuild && reactionsGuild.has(message.id)) {
         // Reaction should get ignored
 
         // Delete entry from cache
-        reactionsGuild.delete(message.id);
-    } else if (reaction.emoji.name === config.reactions.emoji && !message.author.bot
-        && user.id !== message.author.id && message.guild.members.cache.has(message.author.id)) {
+        return reactionsGuild.delete(message.id);
+    } else {
         // Score increasing/decreasing reaction
         // TODO: Support multiple/per server emojis
 
@@ -67,9 +76,9 @@ module.exports = async (reaction, user, increment = true) => {
 
             // Update score
             if (increment) {
-                await reacted.increment({reactions: +1});
+                await reacted.increment({reactions: 1});
             } else {
-                await reacted.increment({reactions: -1}, {
+                await reacted.decrement({reactions: 1}, {
                     where: {reactions: {[Op.gt]: 0}}
                 });
             }
@@ -88,8 +97,6 @@ module.exports = async (reaction, user, increment = true) => {
 };
 
 async function updateRole(message, newScore) {
-    await users.update({reactions: newScore}, {where: {guild: message.guild.id, user: message.author.id}});
-
     // Get guild map
     let lastUpdateGuild = lastUpdate.get(message.guild.id);
     if (!lastUpdateGuild) {

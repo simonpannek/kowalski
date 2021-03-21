@@ -19,6 +19,7 @@
   "homepage": "https://github.com/SimonPannek/discord-pingu-bot#readme",
   "dependencies": {
     "discord.js": "^12.5.1",
+    "emoji-regex": "^9.2.2",
     "sequelize": "^6.5.0",
     "sqlite3": "^5.0.2"
   }

@@ -1,6 +1,6 @@
 const {client} = require("../modules/globals");
-const {roles, reactionroles, users} = require("../modules/database");
-const {messageFromMention} = require("../modules/parser");
+const {roles, reactionroles, users, emojis} = require("../modules/database");
+const {messageFromId} = require("../modules/parser");
 
 module.exports = {
     name: "ready",
@@ -10,6 +10,7 @@ module.exports = {
         await roles.sync();
         await reactionroles.sync();
         await users.sync();
+        await emojis.sync();
         console.log("Finished syncing database tables.");
 
         // Fetch all users
@@ -20,7 +21,7 @@ module.exports = {
         console.log("Finished fetching users.");
 
         await cleanDatabase(await roles.findAll(), async () => true);
-        console.log("Finished cleaning up and caching roles table.");
+        console.log("Finished cleaning up roles table.");
 
         // TODO: Also clear when message was removed / channel was removed
 
@@ -35,7 +36,7 @@ module.exports = {
             // Row is invalid, if message was removed
             const channel = guild.channels.cache.get(channelId);
             const messageId = row.get("message");
-            const message = messageFromMention(messageId, channel);
+            const message = messageFromId(messageId, channel);
 
             if (!messageId || !message) {
                 return false;
@@ -60,6 +61,9 @@ module.exports = {
             return userId && guild.member(userId);
         });
         console.log("Finished cleaning up users table.");
+
+        await cleanDatabase(await emojis.findAll(), async () => true);
+        console.log("Finished cleaning up emojis table.");
 
         // Set custom status
         await client.user.setActivity("reactions", {

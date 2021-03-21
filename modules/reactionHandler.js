@@ -18,7 +18,13 @@ module.exports = async (reaction, user, increment = true) => {
         }
 
         // Execute reaction-managers
-        await reactionRoleManager(reaction, user, increment);
-        return reactionManager(reaction, user, increment);
+        const message = reaction.message;
+        if (message.author.bot) {
+            // Possible reactionrole event
+            return reactionRoleManager(reaction, user, increment);
+        } else if (user.id !== message.author.id  && message.guild.members.cache.has(message.author.id)) {
+            // Possible normal reaction
+            return reactionManager(reaction, user, increment);
+        }
     }
 };

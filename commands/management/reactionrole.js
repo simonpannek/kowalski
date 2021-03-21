@@ -1,5 +1,5 @@
 const {reactionroles} = require("../../modules/database");
-const {roleFromMention, messageFromMention, stringFromEmoji} = require("../../modules/parser");
+const {roleFromMention, messageFromId, stringFromEmoji} = require("../../modules/parser");
 const {errorResponse} = require("../../modules/response");
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         // Parse message
-        const reactionMessage = await messageFromMention(args[1], message.channel);
+        const reactionMessage = await messageFromId(args[1], message.channel);
 
         if (!reactionMessage) {
             return message.channel.send("Could not find this message.");

@@ -70,5 +70,17 @@ module.exports = {
             type: Sequelize.INTEGER,
             defaultValue: 0
         }
+    }),
+    emojis: sequelizeInstance.define("emojis", {
+        // Guild id
+        guild: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Emoji
+        emoji: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        }
     })
 };
