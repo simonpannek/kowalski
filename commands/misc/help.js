@@ -1,10 +1,11 @@
 const {config, commands} = require("../../modules/globals");
+const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "help",
     description: "Prints some information about all commands a user can execute.",
     usage: "[?command]",
-    cooldown: 5,
+    cooldown: 3,
     async execute(message, args) {
         const reply = [];
 
@@ -13,17 +14,17 @@ module.exports = {
             const command = commands.get(args[0].toLowerCase());
 
             // Check if command exists
-            if (command && (!command.owner || config.owner === message.author.id)
-                && (!command.permissions || message.member.hasPermission(command.permissions))) {
-                // Print help
-                reply.push(`**Name:** ${capitalize(command.name)}`);
-                reply.push("-----");
-                if (command.description) reply.push(`**Description:** ${command.description}`);
-                if (command.usage) reply.push(`**Usage:** ${config.prefix}${command.name} ${command.usage}`);
-                if (command.cooldown) reply.push(`**Cooldown:** ${command.cooldown} seconds`);
-            } else {
-                return message.channel.send("Could not find this command.");
+            if (!command || (command.owner && config.owner !== message.author.id)
+                || (command.permissions && !message.member.hasPermission(command.permissions))) {
+                throw new InstanceNotFoundError("Could not find this command.");
             }
+
+            // Print help
+            reply.push(`**Name:** ${capitalize(command.name)}`);
+            reply.push("-----");
+            if (command.description) reply.push(`**Description:** ${command.description}`);
+            if (command.usage) reply.push(`**Usage:** ${config.prefix}${command.name} ${command.usage}`);
+            if (command.cooldown) reply.push(`**Cooldown:** ${command.cooldown} seconds`);
         } else {
             // Sort commands by category
             const sortedCommands = commands.array().sort((c1, c2) => c1.category > c2.category ? 1 : -1)

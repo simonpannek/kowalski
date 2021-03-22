@@ -1,26 +1,29 @@
+const {InvalidArgumentsError} = require("../../modules/errortypes");
+
 module.exports = {
     name: "clear",
     description: "Deletes a certain amount of messages.",
     usage: "[number]",
     min_args: 1,
+    message_delete: true,
     clear_time: 3,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
-        // Check if argument is a number
+        // Get number
         if (isNaN(args[0])) {
-            throw new Error("Invalid arguments.");
+            throw new InvalidArgumentsError("First argument must be a number.");
         }
 
+        // Check bounds of number
         const num = Number(args[0]);
 
-        // Check if number is in bounds
-        if (num >= 1 && num <= 99) {
-            // Delete messages
-            const deleted = await message.channel.bulkDelete(num + 1, true);
-
-            return message.channel.send(`Cleared ${deleted.size - 1} messages.`);
-        } else {
-            return message.channel.send("Number has to be between 1 and 99.")
+        if (num >= 1 && num <= 100) {
+            throw new InvalidArgumentsError("First argument has to be between 1 and 100.");
         }
+
+        // Delete messages
+        const deleted = await message.channel.bulkDelete(num, true);
+
+        return message.channel.send(`Cleared ${deleted.size} messages.`);
     }
 };

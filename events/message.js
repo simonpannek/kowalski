@@ -1,8 +1,7 @@
 const fs = require("fs");
-const {errorResponse} = require("../modules/response");
 
 const {Discord, config, commands, commandCooldowns} = require("../modules/globals");
-const {cooldownResponse} = require("../modules/response");
+const {errorResponse, cooldownResponse} = require("../modules/response");
 const {NotEnoughArgumentsError, InvalidArgumentsError, InstanceNotFoundError} = require("../modules/errortypes");
 
 // Get all subfolders
@@ -70,6 +69,8 @@ module.exports = {
                     return printUsage(message, command, "Invalid arguments", error.message);
                 case InstanceNotFoundError:
                     return message.channel.send(error.message);
+                case Discord.DiscordAPIError:
+                    return handleApiError(message, error);
                 default:
                     console.error("An unknown error occurred when executing the command: ", error);
                     return errorResponse(message);
@@ -82,6 +83,15 @@ async function commandHandler(message, command, args) {
     // Check if the command has enough arguments
     if (command.min_args && args.length < command.min_args) {
         throw new NotEnoughArgumentsError(`At least ${command.min_args} argument(s) needed.`);
+    }
+
+    // Check if message should get removed
+    if (command.message_delete) {
+        try {
+            await message.delete();
+        } catch (ignored) {
+            // Message probably was deleted already
+        }
     }
 
     // Try to execute the command
@@ -109,7 +119,7 @@ async function commandHandler(message, command, args) {
             try {
                 await answer.delete();
             } catch (ignored) {
-                // Message probably was already deleted
+                // Message probably was deleted already
             }
         }, command.clear_time * 1000);
     }
@@ -122,4 +132,17 @@ async function printUsage(message, command, errTitle = "Error", errMessage = "Co
     }
 
     return message.channel.send(reply);
+}
+
+async function handleApiError(message, error) {
+    switch (error.code) {
+        case 50013:
+            return message.channel.send("The bot has insufficient permissions to execute this command.");
+        case 130000:
+            // API is overloaded, do not send more messages
+            return;
+        default:
+            console.error("An API error occured when executing the command: ", error);
+            return message.channel.send("Something went wrong trying to execute the command. Please try again later.");
+    }
 }
