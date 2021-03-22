@@ -1,6 +1,6 @@
 const {sequelize} = require("../../modules/database");
 const {arraySplit} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
+const {InvalidArgumentsError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "sql",
@@ -11,32 +11,31 @@ module.exports = {
     async execute(message, args) {
         // Join arguments to one single query
         let query = args.join(" ");
+
         // Check query
-        if (query.startsWith("`") && query.endsWith("`")) {
-            // Parse query
-            query = query.slice(1, -1);
-            try {
-                // Execute query
-                const results = await sequelize.query(query);
+        if (!query.startsWith("`") || !query.endsWith("`")) {
+            throw new InvalidArgumentsError("Sql statement has to be wrapped in a single line `code-block`.");
+        }
 
-                // Parse result
-                let reply = [];
-                if (results[0] && results[0].length) {
-                    results[0].forEach(r => reply.push(JSON.stringify(r)));
-                    reply = arraySplit(reply);
-                }
+        // Parse query
+        query = query.slice(1, -1);
 
-                // Print result
-                await message.channel.send("Query was executed successfully.");
+        // Execute query
+        const results = await sequelize.query(query);
 
-                if (reply) {
-                    for (let line of reply) {
-                        await message.channel.send(line, {split:true});
-                    }
-                }
-            } catch (error) {
-                console.error("Something went wrong when trying to execute the query: ", error);
-                return errorResponse(message);
+        // Parse result
+        let reply = [];
+        if (results[0] && results[0].length) {
+            results[0].forEach(r => reply.push(JSON.stringify(r)));
+            reply = arraySplit(reply);
+        }
+
+        // Print result
+        await message.channel.send("Query was executed successfully.");
+
+        if (reply) {
+            for (let line of reply) {
+                await message.channel.send(line, {split: true});
             }
         }
     }

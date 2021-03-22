@@ -1,57 +1,78 @@
 const {emojis} = require("../../modules/database");
 const {stringToEmoji, stringFromEmoji} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
+const {
+    NotEnoughArgumentsError,
+    InvalidArgumentsError,
+    InstanceNotFoundError,
+    DatabaseError
+} = require("../../modules/errortypes");
 
 module.exports = {
     name: "emoji",
     description: "Add/remove emoji to listen to.",
-    usage: "[add|remove] [emoji]",
-    min_args: 2,
+    usage: "['add'|'remove'] [emoji] | ['list']",
+    min_args: 1,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
-        // Get emoji
-        const emoji = stringToEmoji(args[1]);
+        let emoji;
 
-        if (!emoji) {
-            return message.channel.send("This emoji is not available.");
+        // Check if add/remove have enough arguments
+        if (["add", "remove"].includes(args[0].toLowerCase())) {
+            if (args.length < 2) {
+                throw new NotEnoughArgumentsError("At least 2 arguments needed for add/remove.");
+            }
+
+            // Get emoji
+            emoji = stringToEmoji(args[1]);
+
+            if (!emoji) {
+                throw new InstanceNotFoundError("Could not find this emoji.");
+            }
         }
 
         switch (args[0]) {
-            // TODO: List command (maybe as a command "type" for add/remove/list commands?)
             case "add":
-                // Try to add the emoji to the database
-                try {
-                    const created = await emojis.create({
+                // Add the emoji to the database
+                const created = await emojis.create({
+                    guild: message.guild.id,
+                    emoji: stringFromEmoji(emoji)
+                });
+
+                if (!created) {
+                    throw new DatabaseError("Could not create an entry for the emoji.");
+                }
+
+                return message.channel.send("The emoji was added to the database.");
+            case "remove":
+                // Remove the emoji from the database
+                const deleted = await emojis.destroy({
+                    where: {
                         guild: message.guild.id,
                         emoji: stringFromEmoji(emoji)
-                    });
-                    if (created) {
-                        return message.channel.send("The emoji was added to the database.");
                     }
-                } catch (error) {
-                    console.error("Something went wrong when trying to create the entry: ", error);
-                    return errorResponse(message);
+                });
+
+                if (!deleted) {
+                    return message.channel.send(`Could not find an entry for the emoji ${stringFromEmoji(emoji)}.`);
                 }
-                break
-            case "remove":
-                try {
-                    const deleted = await emojis.destroy({
-                        where: {
-                            guild: message.guild.id,
-                            emoji: stringFromEmoji(emoji)
-                        }
-                    });
-                    if (deleted) {
-                        return message.channel.send(`The emoji was removed from the database.`);
-                    }
-                    // TODO: Else if it was not removed
-                } catch (error) {
-                    console.error("Something went wrong when trying to delete the entry: ", error);
-                    return errorResponse(message);
+
+                return message.channel.send(`The emoji ${stringFromEmoji(emoji)} was removed from the database.`);
+            case "list":
+                // Get emojis
+                const rows = await emojis.findAll({where: {guild: message.guild.id}, attributes: ["emoji"]});
+
+                if (!rows || rows.length < 1) {
+                    return message.channel.send("The bot is currently not listening to any emojis.")
                 }
-                break;
+
+                // Get string array of emojis
+                const emojiArray = [];
+
+                rows.forEach(row => emojiArray.push(row.get("emoji")));
+
+                return message.channel.send(`The bot is currently listening to the emoji(s) ${emojiArray.join(", ")}.`);
             default:
-                throw new Error("Invalid arguments.");
+                throw new InvalidArgumentsError("First argument has to be either add, remove or list.");
         }
     }
 };

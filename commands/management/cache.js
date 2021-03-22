@@ -6,6 +6,7 @@ const {
     lastUpdate
 } = require("../../modules/globals");
 const {arraySplit} = require("../../modules/parser");
+const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "cache",
@@ -26,7 +27,7 @@ module.exports = {
             case "lastUpdate":
                 return printMap(message, lastUpdate);
             default:
-                throw new Error("Wrong argument.");
+                throw new InstanceNotFoundError("Could not find this cache.");
         }
     }
 };

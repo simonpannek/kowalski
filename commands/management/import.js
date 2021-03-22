@@ -1,5 +1,5 @@
 const {roles, reactionroles, users, emojis} = require("../../modules/database");
-const {errorResponse} = require("../../modules/response");
+const {InvalidArgumentsError, InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "import",
@@ -24,32 +24,30 @@ module.exports = {
                 table = emojis;
                 break;
             default:
-                return message.channel.send("Table is not available for import.");
+                throw new InstanceNotFoundError("Could not find this table.");
         }
 
         // Join arguments to one single query
         let data = args.join(" ");
-        // Check data
-        if (data.startsWith("```") && data.endsWith("```")) {
-            // Parse data
-            data = data.slice(3, -3);
-            const objects = [];
-            data.split("\n").forEach(line => {
-                try {
-                    const parsed = JSON.parse(line);
-                    objects.push(parsed);
-                } catch (ignored) {
-                    // Invalid object, continue
-                }
-            });
 
-            try {
-                await table.bulkCreate(objects);
-            } catch (error) {
-                console.error("Something went wrong when trying to execute the query: ", error);
-                return errorResponse(message);
-            }
+        // Check data
+        if (!data.startsWith("```") || !data.endsWith("```")) {
+            throw new InvalidArgumentsError("Data has to be wrapped in a multi line ```code-block```.");
         }
+
+        // Parse data
+        data = data.slice(3, -3);
+        const objects = [];
+        data.split("\n").forEach(line => {
+            try {
+                const parsed = JSON.parse(line);
+                objects.push(parsed);
+            } catch (ignored) {
+                // Invalid object, continue
+            }
+        });
+
+        await table.bulkCreate(objects);
 
         return message.channel.send("Import was successful.");
     }
