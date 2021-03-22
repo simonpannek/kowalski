@@ -17,7 +17,7 @@ module.exports = {
         // Check bounds of number
         const num = Number(args[0]);
 
-        if (num >= 1 && num <= 100) {
+        if (num < 1 || num > 100) {
             throw new InvalidArgumentsError("First argument has to be between 1 and 100.");
         }
 

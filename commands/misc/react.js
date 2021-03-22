@@ -20,6 +20,7 @@ module.exports = {
             throw new InstanceNotFoundError("Could not find a message to react to.");
         }
 
+        // Get emoji
         const emoji = stringToEmoji(args[0]);
 
         if (!emoji) {

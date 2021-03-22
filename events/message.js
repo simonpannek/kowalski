@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-const {Discord, config, commands, commandCooldowns} = require("../modules/globals");
+const {Discord, config, commands, commandCooldowns, getPrefix} = require("../modules/globals");
 const {errorResponse, cooldownResponse} = require("../modules/response");
 const {NotEnoughArgumentsError, InvalidArgumentsError, InstanceNotFoundError} = require("../modules/errortypes");
 
@@ -27,23 +27,44 @@ commandFolders.forEach(folder => {
 // TODO: Avoid crash if no write permission and check/don't log missing access
 // TODO: Refactor ALL responses and help entries
 // TODO: Add cooldowns to admin commands
+// TODO: Check if usage uses string literals ('') if a name is meant literally
+// TODO: Botlink & setup command
 
 module.exports = {
     name: "message",
     async execute(message) {
-        // Check if the message is addressed to the bot
-        if (!message.content.startsWith(config.prefix) || message.author.bot || message.channel.type !== "text") {
+        // Check if the message could be addressed to the bot
+        if (message.author.bot || message.channel.type !== "text" || message.content.length < 1) {
+            return;
+        }
+
+        // Check prefix
+        const messagePrefix = message.content.charAt(0);
+
+        if (!config.prefixes.includes(messagePrefix) || messagePrefix !== await getPrefix(message.guild)) {
             return;
         }
 
         // Parse command and arguments
-        const args = message.content.slice(config.prefix.length).trim().split(/ +/);
+        const args = message.content.slice(1).trim().split(/ +/);
         const command = commands.get(args.shift().toLowerCase());
 
         // Check if the command can be executed
         if (!command || (command.owner && config.owner !== message.author.id)
             || (command.permissions && !message.member.hasPermission(command.permissions))) {
             return;
+        }
+
+        // Check misuse cooldown
+        const cooldownMisuse = commandCooldowns.get("misuse");
+
+        if (cooldownMisuse) {
+            const currentCooldown = cooldownMisuse.get(message.author.id);
+
+            // This is probably always true, because expired cooldowns should get removed automatically
+            if (currentCooldown && Date.now() < currentCooldown) {
+                return cooldownResponse(message);
+            }
         }
 
         // Check command cooldown
@@ -61,6 +82,9 @@ module.exports = {
         try {
             await commandHandler(message, command, args);
         } catch (error) {
+            // Add misuse
+            setCooldown(message.author, "misuse", 1);
+
             // Handle errors
             switch (error.constructor) {
                 case NotEnoughArgumentsError:
@@ -97,21 +121,7 @@ async function commandHandler(message, command, args) {
     // Try to execute the command
     const answer = await command.execute(message, args);
 
-    // Check if command has a cooldown
-    if (command.cooldown) {
-        // Update cooldown
-        let cooldownCommand = commandCooldowns.get(command.name);
-        if (!cooldownCommand) {
-            cooldownCommand = new Discord.Collection();
-            commandCooldowns.set(command.name, cooldownCommand);
-        }
-
-        const newCooldown = command.cooldown * 1000;
-        cooldownCommand.set(message.author.id, Date.now() + newCooldown);
-
-        // Remove cooldown from collection when expired
-        setTimeout(() => cooldownCommand.delete(message.author.id), newCooldown);
-    }
+    setCooldown(message.author, command.name, command.cooldown);
 
     // Check if answer should get removed
     if (command.clear_time && answer && answer.delete) {
@@ -125,10 +135,25 @@ async function commandHandler(message, command, args) {
     }
 }
 
+function setCooldown(author, name, cooldown) {
+    // Update cooldown
+    let cooldownCommand = commandCooldowns.get(name);
+    if (!cooldownCommand) {
+        cooldownCommand = new Discord.Collection();
+        commandCooldowns.set(name, cooldownCommand);
+    }
+
+    const newCooldown = (cooldown ? cooldown : 1) * 1000;
+    cooldownCommand.set(author.id, Date.now() + newCooldown);
+
+    // Remove cooldown from collection when expired
+    setTimeout(() => cooldownCommand.delete(author.id), newCooldown);
+}
+
 async function printUsage(message, command, errTitle = "Error", errMessage = "Could not execute the command.") {
     let reply = `**${errTitle}**: ${errMessage}`;
     if (command.usage) {
-        reply += `\n\nExpected usage: \`${config.prefix}${command.name} ${command.usage}\``;
+        reply += `\n\nExpected usage: \`${await getPrefix(message.guild)}${command.name} ${command.usage}\``;
     }
 
     return message.channel.send(reply);

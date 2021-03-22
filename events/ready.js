@@ -1,6 +1,8 @@
 const {client} = require("../modules/globals");
-const {roles, reactionroles, users, emojis} = require("../modules/database");
+const {roles, reactionroles, users, emojis, prefixes} = require("../modules/database");
 const {messageFromId, stringToEmoji} = require("../modules/parser");
+
+// TODO: Select distinct guild and first clean up just for guilds?
 
 module.exports = {
     name: "ready",
@@ -11,6 +13,7 @@ module.exports = {
         await reactionroles.sync();
         await users.sync();
         await emojis.sync();
+        await prefixes.sync();
         console.log("Finished syncing database tables.");
 
         // Fetch all users
@@ -22,8 +25,6 @@ module.exports = {
 
         await cleanDatabase(await roles.findAll(), async () => true);
         console.log("Finished cleaning up roles table.");
-
-        // TODO: Also clear when message was removed / channel was removed
 
         await cleanDatabase(await reactionroles.findAll(), async (row, guild) => {
             // Row is invalid, if channel does not exist
@@ -62,13 +63,14 @@ module.exports = {
         });
         console.log("Finished cleaning up users table.");
 
-        // TODO: Clear when emoji gets removed?
-
         await cleanDatabase(await emojis.findAll(), async row => {
             // Row is valid if emoji is still available for the bot
             return stringToEmoji(row.get("emoji"));
         });
         console.log("Finished cleaning up emojis table.");
+
+        await cleanDatabase(await prefixes.findAll(), async () => true);
+        console.log("Finished cleaning up prefixes table.");
 
         // Set custom status
         await client.user.setActivity("reactions", {

@@ -82,5 +82,17 @@ module.exports = {
             type: Sequelize.STRING,
             primaryKey: true
         }
+    }, {timestamps: false}),
+    prefixes: sequelizeInstance.define("prefixes", {
+        // Guild id
+        guild: {
+            type: Sequelize.STRING,
+            primaryKey: true
+        },
+        // Prefix
+        prefix: {
+            type: Sequelize.STRING(1),
+            allowNull: false
+        }
     }, {timestamps: false})
 };

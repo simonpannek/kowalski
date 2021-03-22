@@ -58,7 +58,7 @@ module.exports = async (reaction, user, increment = true) => {
                 reactionCooldowns.set(message.guild.id, reactionGuild);
             }
 
-            const currentCooldown = config.reactions.cooldown * 1000;
+            const currentCooldown = config.reaction_cooldown * 1000;
             reactionGuild.set(user.id, now + currentCooldown);
 
             // Remove cooldown from collection when expired

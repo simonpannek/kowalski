@@ -1,4 +1,4 @@
-const {config, commands} = require("../../modules/globals");
+const {config, commands, getPrefix} = require("../../modules/globals");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
             reply.push(`**Name:** ${capitalize(command.name)}`);
             reply.push("-----");
             if (command.description) reply.push(`**Description:** ${command.description}`);
-            if (command.usage) reply.push(`**Usage:** ${config.prefix}${command.name} ${command.usage}`);
+            if (command.usage) reply.push(`**Usage:** ${await getPrefix(message.guild)}${command.name} ${command.usage}`);
             if (command.cooldown) reply.push(`**Cooldown:** ${command.cooldown} seconds`);
         } else {
             // Sort commands by category

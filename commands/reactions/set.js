@@ -39,7 +39,7 @@ module.exports = {
 
         // Check if user has an entry
         if (!row || row.length < 1) {
-            throw new DatabaseError(`Could not find or create an entry for the user ${user.tag}`);
+            throw new DatabaseError(`Could not find or create an entry for the user ${user.tag}.`);
         }
 
         await row[0].update({reactions: num});

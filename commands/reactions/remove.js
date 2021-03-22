@@ -17,10 +17,10 @@ module.exports = {
 
         const deleted = await users.destroy({where: {guild: message.guild.id, user: user.id}});
 
-        if (deleted) {
-            return message.channel.send(`The user ${user.tag} was removed from the database.`);
+        if (!deleted) {
+            return message.channel.send(`Could not find an entry for the user ${user.tag}.`);
         }
 
-        return message.channel.send(`Could not find an entry for the user ${user.tag}.`);
+        return message.channel.send(`The user ${user.tag} was removed from the database.`);
     }
 };
