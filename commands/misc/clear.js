@@ -14,13 +14,13 @@ module.exports = {
         const num = Number(args[0]);
 
         // Check if number is in bounds
-        if (num >= 1 && num <= 100) {
+        if (num >= 1 && num <= 99) {
             // Delete messages
             const deleted = await message.channel.bulkDelete(num + 1, true);
 
             return message.channel.send(`Cleared ${deleted.size - 1} messages.`);
         } else {
-            return message.channel.send("Number has to be between 1 and 100.")
+            return message.channel.send("Number has to be between 1 and 99.")
         }
     }
 };

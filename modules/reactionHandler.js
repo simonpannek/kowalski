@@ -1,8 +1,6 @@
 const reactionManager = require("../modules/reactionManager");
 const reactionRoleManager = require("../modules/reactionRoleManager");
 
-// TODO: Add support for ignored groups
-
 module.exports = async (reaction, user, increment = true) => {
     // Check if user is not a bot
     if (!user.bot) {

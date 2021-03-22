@@ -1,6 +1,8 @@
 const {reactionroles} = require("./database");
 const {stringFromEmoji} = require("./parser");
 
+// TODO: Anti spam module
+
 module.exports = async (reaction, user, increment = true) => {
     const message = reaction.message;
 
@@ -15,7 +17,7 @@ module.exports = async (reaction, user, increment = true) => {
                 message: message.id,
                 emoji: stringFromEmoji(reaction.emoji)
             },
-            attributes: ["user", "role"],
+            attributes: ["role"],
         });
     } catch (error) {
         console.error("Something went wrong when trying to query the database entry: ", error);

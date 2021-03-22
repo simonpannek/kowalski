@@ -21,6 +21,8 @@ module.exports = {
             return message.channel.send("Author of message must be a bot.");
         }
 
+        await message.delete();
+
         switch (args[0].toLowerCase()) {
             // TODO: Add list command
             case "add":
