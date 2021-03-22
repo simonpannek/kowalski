@@ -1,8 +1,16 @@
 module.exports = {
     async errorResponse(message) {
-        return message.react("🔥");
+        try {
+            return message.react("🔥");
+        } catch (ignored) {
+            // Failed to react, continue anyway
+        }
     },
     async cooldownResponse(message) {
-        return message.react("🕑");
+        try {
+            return message.react("🕑");
+        } catch (ignored) {
+            // Failed to react, continue anyway
+        }
     }
 };

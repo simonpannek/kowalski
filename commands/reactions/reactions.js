@@ -1,6 +1,7 @@
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
 const {errorResponse} = require("../../modules/response");
+const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "reactions",
@@ -15,24 +16,21 @@ module.exports = {
             user = message.author;
         }
 
-        if (user) {
-            // Try to get the reactions from the database
-            try {
-                const reacted = await users.findOne({
-                    where: {guild: message.guild.id, user: user.id},
-                    attributes: ["reactions"],
-                });
-                if (reacted) {
-                    return message.channel.send(`The user ${user.tag} has **${reacted.get("reactions")} reaction(s)**.`);
-                } else {
-                    return message.channel.send(`Could not find an entry for the user ${user.tag}.`);
-                }
-            } catch (error) {
-                console.error("Something went wrong when trying to access the reactions: ", error);
-                return errorResponse(message);
-            }
-        } else {
-            return message.channel.send("Could not find this user.");
+        if (!user) {
+            throw new InstanceNotFoundError("Could not find this user.");
         }
+
+        // Get the reactions from the database
+        const row = await users.findOne({
+            where: {guild: message.guild.id, user: user.id},
+            attributes: ["reactions"],
+        });
+
+        let reactions = 0;
+        if (row) {
+            reactions = row.get("reactions");
+        }
+
+        return message.channel.send(`The user ${user.tag} has **${reactions} reaction(s)**.`);
     }
 };

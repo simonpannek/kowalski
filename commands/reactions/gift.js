@@ -1,71 +1,64 @@
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
+const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "gift",
     description: "Send a certain number of reactions to another user (50% of the reactions get lost).",
     usage: "[user] [number]",
     min_args: 2,
-    cooldown: 60,
+    cooldown: 10,
     async execute(message, args) {
         // Get author
         const author = message.author;
 
         // Get user
         const user = userFromMention(args[0]);
+
         if (!user) {
-            return message.channel.send("Could not find this user.");
+            throw new InstanceNotFoundError("Could not find this user.");
         }
 
         // Get number
         if (isNaN(args[1])) {
-            throw new Error("Invalid arguments.");
+            throw new InvalidArgumentsError("Second argument must be a number.");
         }
-        const num = Number(args[1]);
 
         // Check bounds of number
+        const num = Number(args[1]);
+
         if (num < 2) {
-            return message.channel.send("Number has to be greater than 1.")
+            throw new InvalidArgumentsError("Second argument must be greater than 1.");
         }
 
         // Get entry of user
-        const userRow = await users.findOne({
-            where: {guild: message.guild.id, user: user.id},
-            attributes: ["reactions"]
+        const userRow = await users.findOrCreate({
+            where: {guild: message.guild.id, user: user.id}
         });
 
         // Check if user has an entry
-        if (!userRow) {
-            return message.channel.send(`Could not find an entry for the user ${user.tag}.`);
+        if (!userRow || userRow.length < 1) {
+            throw new DatabaseError(`Could not find or create an entry for the user ${user.tag}`);
         }
 
         // Get entry of message author
         const authorRow = await users.findOne({
-            where: {guild: message.guild.id, user: author.id},
-            attributes: ["reactions"]
+            where: {guild: message.guild.id, user: author.id}
         });
 
         // Check if author has enough reactions
         if (!authorRow || authorRow.get("reactions") < num) {
-            return message.channel.send("You do not have enough reactions.");
+            throw new InvalidArgumentsError("You do not have enough reactions.");
         }
 
         // Update author
-        await users.update({reactions: authorRow.get("reactions") - num}, {
-            where: {
-                guild: message.guild.id,
-                user: message.author.id
-            }
-        });
+        await authorRow.decrement({reactions: num});
 
         // Update user
         const toSend = Math.floor(num / 2);
-        await users.update({reactions: userRow.get("reactions") + toSend}, {
-            where: {
-                guild: message.guild.id,
-                user: user.id
-            }
-        });
+        await userRow[0].increment({reactions: toSend});
+
+        // TODO: Update roles accordingly (maybe combine as a huge "update roles" module together with reactionroles?)
 
         return message.channel.send(`${user.tag} has received **${toSend} reaction(s)**.`);
     }
