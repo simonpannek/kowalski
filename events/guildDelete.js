@@ -1,5 +1,5 @@
 const {ignoreReactions} = require("../modules/globals");
-const {roles, reactionroles, users} = require("../modules/database");
+const {roles, reactionroles, users, emojis} = require("../modules/database");
 
 module.exports = {
     name: "guildDelete",
@@ -8,6 +8,7 @@ module.exports = {
         await users.destroy({where: {guild: guild.id}});
         await reactionroles.destroy({where: {guild: guild.id}});
         await roles.destroy({where: {guild: guild.id}});
+        await emojis.destroy({where: {guild: guild.id}});
 
         // Clear guild from cache if there is an entry
         if (ignoreReactions.has(guild.id)) {
