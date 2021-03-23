@@ -1,23 +1,19 @@
-const Discord = require("discord.js");
+const {Client, Collection} = require("discord.js");
 
 const {prefixes} = require("./database");
 
-// TODO: Remove Discord global, config global etc.
-
 module.exports = {
-    Discord: Discord,
-    config: require("../config.json"),
-    client: new Discord.Client({partials: ["MESSAGE", "REACTION"]}),
+    client: new Client({partials: ["MESSAGE", "REACTION"]}),
     // All available commands of the bot
-    commands: new Discord.Collection(),
+    commands: new Collection(),
     // Manages who currently has a reaction cooldown
-    reactionCooldowns: new Discord.Collection(),
+    reactionCooldowns: new Collection(),
     // Manages who currently has a command cooldown
-    commandCooldowns: new Discord.Collection(),
+    commandCooldowns: new Collection(),
     // Messages, where the next removal-reaction event should get ignored
-    ignoreReactions: new Discord.Collection(),
+    ignoreReactions: new Collection(),
     // Threshold for less role changes
-    lastUpdate: new Discord.Collection(),
+    lastUpdate: new Collection(),
     // Return prefix for current server
     async getPrefix(guild) {
         // Get prefix entry from database

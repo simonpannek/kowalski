@@ -1,6 +1,8 @@
+const {DiscordAPIError, Collection} = require("discord.js");
 const fs = require("fs");
 
-const {Discord, config, commands, commandCooldowns, getPrefix} = require("../modules/globals");
+const config = require("../config.json");
+const {commands, commandCooldowns, getPrefix} = require("../modules/globals");
 const {errorResponse, cooldownResponse} = require("../modules/response");
 const {NotEnoughArgumentsError, InvalidArgumentsError, InstanceNotFoundError} = require("../modules/errortypes");
 
@@ -24,11 +26,6 @@ commandFolders.forEach(folder => {
 });
 
 // TODO: Check how many entries there are in the reactionrole/emoji databases
-// TODO: Avoid crash if no write permission and check/don't log missing access
-// TODO: Refactor ALL responses and help entries
-// TODO: Add cooldowns to admin commands
-// TODO: Check if usage uses string literals ('') if a name is meant literally
-// TODO: Botlink & setup command
 
 module.exports = {
     name: "message",
@@ -82,8 +79,9 @@ module.exports = {
         try {
             await commandHandler(message, command, args);
         } catch (error) {
-            // Add misuse
-            setCooldown(message.author, "misuse", 1);
+            // Add misuse cooldown (sort of global punishment for 3 seconds)
+            const timeout = 1;
+            setCooldown(message.author, "misuse", timeout);
 
             // Handle errors
             switch (error.constructor) {
@@ -92,8 +90,17 @@ module.exports = {
                 case InvalidArgumentsError:
                     return printUsage(message, command, "Invalid arguments", error.message);
                 case InstanceNotFoundError:
-                    return message.channel.send(error.message);
-                case Discord.DiscordAPIError:
+                    const reply = [];
+
+                    reply.push(error.message);
+
+                    if (error.resolve) {
+                        reply.push("");
+                        reply.push(`**What's wrong?** ${error.resolve}`);
+                    }
+
+                    return message.channel.send(reply);
+                case DiscordAPIError:
                     return handleApiError(message, error);
                 default:
                     console.error("An unknown error occurred when executing the command: ", error);
@@ -139,7 +146,7 @@ function setCooldown(author, name, cooldown) {
     // Update cooldown
     let cooldownCommand = commandCooldowns.get(name);
     if (!cooldownCommand) {
-        cooldownCommand = new Discord.Collection();
+        cooldownCommand = new Collection();
         commandCooldowns.set(name, cooldownCommand);
     }
 

@@ -2,8 +2,6 @@ const {client} = require("../modules/globals");
 const {roles, reactionroles, users, emojis, prefixes} = require("../modules/database");
 const {messageFromId, stringToEmoji} = require("../modules/parser");
 
-// TODO: Select distinct guild and first clean up just for guilds?
-
 module.exports = {
     name: "ready",
     once: true,
