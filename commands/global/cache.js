@@ -1,4 +1,5 @@
 const {
+    client,
     commands,
     reactionCooldowns,
     commandCooldowns,
@@ -11,32 +12,49 @@ const {InstanceNotFoundError} = require("../../modules/errortypes");
 module.exports = {
     name: "cache",
     description: "Print the content of a certain cache.",
-    usage: "[commands|reactionCooldowns|commandCooldowns|ignoreReactions|lastUpdate]",
+    usage: "['guilds'|'commands'|'reactionCooldowns'|'commandCooldowns'|'ignoreReactions'|'lastUpdate']",
     min_args: 1,
     owner: true,
     async execute(message, args) {
         switch (args[0]) {
+            case "guilds":
+                const guilds = new Map();
+                client.guilds.cache.forEach(guild => guilds.set(guild.id, {
+                    name: guild.name,
+                    memberCount: guild.memberCount
+                }));
+                return printMap(message, guilds);
             case "commands":
                 return printMap(message, commands);
             case "reactionCooldowns":
-                return printMap(message, reactionCooldowns);
+                return printMap(message, reactionCooldowns, mapToObject);
             case "commandCooldowns":
-                return printMap(message, commandCooldowns);
+                return printMap(message, commandCooldowns, mapToObject);
             case "ignoreReactions":
                 return printMap(message, ignoreReactions);
             case "lastUpdate":
-                return printMap(message, lastUpdate);
+                return printMap(message, lastUpdate, mapToObject);
             default:
                 throw new InstanceNotFoundError("Could not find this cache.");
         }
     }
 };
 
-async function printMap(message, map) {
+function mapToObject(map) {
+    const result = {};
+
+    for (let key of map.keys()) {
+        result[key] = JSON.stringify(map.get(key));
+    }
+
+    return result;
+}
+
+async function printMap(message, map, flatMap) {
     let reply = [];
 
     for (let key of map.keys()) {
-        reply.push(`${key} ==> ${JSON.stringify(map.get(key))}`);
+        reply.push(`${key} ==> ${JSON.stringify(flatMap ? flatMap(map.get(key)) : map.get(key))}`);
     }
 
     reply = arraySplit(reply);
