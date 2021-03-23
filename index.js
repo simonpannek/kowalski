@@ -31,6 +31,9 @@ process.on('uncaughtException', function(error){
 
 async function handleApiError(error) {
     switch (error.code) {
+        case 10008:
+            // Old message, ignore
+            return;
         case 50013:
             // Not enough permissions for some action, ignore
             return;
@@ -38,7 +41,7 @@ async function handleApiError(error) {
             // API is overloaded, continue
             return;
         default:
-            console.error("An API error occured when executing the command: ", error);
+            console.error("An API error occurred: ", error);
             return;
     }
 }

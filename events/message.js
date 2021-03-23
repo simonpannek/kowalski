@@ -34,6 +34,12 @@ commandFolders.forEach(folder => {
 module.exports = {
     name: "message",
     async execute(message) {
+        // Check if the message is partial
+        if (message.partial) {
+            // Fetch the information
+            await message.fetch();
+        }
+
         // Check if the message could be addressed to the bot
         if (message.author.bot || message.channel.type !== "text" || message.content.length < 1) {
             return;
