@@ -1,7 +1,11 @@
+const {Collection} = require("discord.js");
 const {Op} = require("sequelize");
-const {Discord, config, reactionCooldowns, ignoreReactions, lastUpdate} = require("./globals");
+
+const config = require("../config.json");
+const {reactionCooldowns, ignoreReactions, lastUpdate} = require("./globals");
 const {users, roles, emojis} = require("./database");
 const {stringFromEmoji} = require("./parser");
+const {DatabaseError} = require("./errortypes");
 
 module.exports = async (reaction, user, increment = true) => {
     const message = reaction.message;
@@ -19,91 +23,87 @@ module.exports = async (reaction, user, increment = true) => {
 
     const ignoreGuild = ignoreReactions.get(message.guild.id);
 
+    // Check if reaction should get ignored
     if (!increment && ignoreGuild && ignoreGuild.includes(message.id)) {
-        // Reaction should get ignored
-
         // Delete entry from cache
         const index = ignoreGuild.findIndex(i => i === message.id);
         return ignoreGuild.splice(index, 1);
-    } else {
-        // Score increasing/decreasing reaction
-
-        // Check for timeout if it's an increment
-        if (increment) {
-            const now = Date.now();
-
-            // Check for cooldown
-            let reactionGuild = reactionCooldowns.get(message.guild.id);
-            if (reactionGuild) {
-                const expirationTime = reactionGuild.get(user.id);
-                // This is probably always true, because expired cooldowns should get removed automatically
-                if (expirationTime && now < expirationTime) {
-                    // Add message to ignored message, so removal event will get ignored
-                    let ignoreGuild = ignoreReactions.get(message.guild.id);
-                    if (!ignoreGuild) {
-                        ignoreGuild = [];
-                        ignoreReactions.set(message.guild.id, ignoreGuild);
-                    }
-
-                    ignoreGuild.push(message.id);
-
-                    // Remove reaction
-                    return reaction.users.remove(user);
-                }
-            }
-
-            // Update cooldown
-            if (!reactionGuild) {
-                reactionGuild = new Discord.Collection();
-                reactionCooldowns.set(message.guild.id, reactionGuild);
-            }
-
-            const currentCooldown = config.reaction_cooldown * 1000;
-            reactionGuild.set(user.id, now + currentCooldown);
-
-            // Remove cooldown from collection when expired
-            setTimeout(() => reactionGuild.delete(user.id), currentCooldown);
-        }
-
-        try {
-            // Get database entry
-            let reacted = await users.findOne({
-                where: {guild: message.guild.id, user: message.author.id}
-            });
-
-            if (!reacted) {
-                // User does not exist, create new row
-                reacted = await users.create({guild: message.guild.id, user: message.author.id});
-            }
-
-            // Update score
-            if (increment) {
-                await reacted.increment({reactions: 1});
-            } else {
-                await reacted.decrement({reactions: 1}, {
-                    where: {reactions: {[Op.gt]: 0}}
-                });
-            }
-
-            // Update role
-            await updateRole(message, Math.max(reacted.get("reactions") + (increment ? 1 : -1), 0));
-        } catch (error) {
-            console.error("Something went wrong when trying to update the database entry: ", error);
-        }
     }
+
+    // Score increasing/decreasing reaction
+
+    // Check for timeout if it's an increment
+    if (increment) {
+        const now = Date.now();
+
+        // Check for cooldown
+        let reactionGuild = reactionCooldowns.get(message.guild.id);
+        if (reactionGuild) {
+            const expirationTime = reactionGuild.get(user.id);
+            // This is probably always true, because expired cooldowns should get removed automatically
+            if (expirationTime && now < expirationTime) {
+                // Add message to ignored message, so removal event will get ignored
+                let ignoreGuild = ignoreReactions.get(message.guild.id);
+                if (!ignoreGuild) {
+                    ignoreGuild = [];
+                    ignoreReactions.set(message.guild.id, ignoreGuild);
+                }
+
+                ignoreGuild.push(message.id);
+
+                // Remove reaction
+                return reaction.users.remove(user);
+            }
+        }
+
+        // Update cooldown
+        if (!reactionGuild) {
+            reactionGuild = new Collection();
+            reactionCooldowns.set(message.guild.id, reactionGuild);
+        }
+
+        const currentCooldown = config.reaction_cooldown * 1000;
+        reactionGuild.set(user.id, now + currentCooldown);
+
+        // Remove cooldown from collection when expired
+        setTimeout(() => reactionGuild.delete(user.id), currentCooldown);
+    }
+
+    // Get entry of user
+    const userRow = await users.findOrCreate({
+        where: {guild: message.guild.id, user: message.author.id}
+    });
+
+    // Check if user has an entry
+    if (!userRow || userRow.length < 1) {
+        throw new DatabaseError(`Could not find or create an entry for the user ${user.tag}`);
+    }
+
+    // Update score
+    if (increment) {
+        await userRow[0].increment({reactions: 1});
+    } else {
+        await userRow[0].decrement({reactions: 1}, {
+            where: {reactions: {[Op.gt]: 0}}
+        });
+    }
+
+    // Update role
+    const newScore = Math.max(userRow[0].get("reactions") + (increment ? 1 : -1), 0);
+    await updateRole(message, newScore);
 };
 
 async function updateRole(message, newScore) {
     // Get guild map
     let lastUpdateGuild = lastUpdate.get(message.guild.id);
     if (!lastUpdateGuild) {
-        lastUpdateGuild = new Discord.Collection();
+        lastUpdateGuild = new Collection();
         lastUpdate.set(message.guild.id, lastUpdateGuild);
     }
 
     // Time variables
-    const roleTimeout = 1.5 * 1000;
-    const now = Date.now()
+    const timeout = 1.5 * 1000;
+    const now = Date.now();
 
     // Set user into map
     lastUpdateGuild.set(message.author.id, now);
@@ -159,5 +159,5 @@ async function updateRole(message, newScore) {
                 await message.member.roles.remove(currentRole);
             }
         }
-    }, roleTimeout);
+    }, timeout);
 }
