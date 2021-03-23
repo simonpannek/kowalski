@@ -174,7 +174,7 @@ async function handleApiError(message, error) {
             // API is overloaded, do not send more messages
             return;
         default:
-            console.error("An API error occured when executing the command: ", error);
+            console.error("An API error occurred when executing the command: ", error);
             return message.channel.send("Something went wrong trying to execute the command. Please try again later.");
     }
 }

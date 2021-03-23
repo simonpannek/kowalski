@@ -10,7 +10,9 @@ or the
 [minimal permissions invite link](https://discord.com/oauth2/authorize?client_id=815239326811947038&scope=bot&permissions=268774464).
 
 If you are using the minimal permissions invite link, make sure the custom role of the bot is ordered above all roles
-the bot should be able to manage. (Otherwise it won't be able to assign them to the users.)
+the bot should be able to manage (Otherwise it won't be able to assign them to the users).
+
+Once connected write `!setup` for instructions how to set up the bot on your server.
 
 ## Run locally
 
