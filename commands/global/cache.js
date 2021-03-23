@@ -4,7 +4,8 @@ const {
     reactionCooldowns,
     commandCooldowns,
     ignoreReactions,
-    lastUpdate
+    lastReactionUpdate,
+    lastReactionrolesUpdate
 } = require("../../modules/globals");
 const {arraySplit} = require("../../modules/parser");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
@@ -12,7 +13,8 @@ const {InstanceNotFoundError} = require("../../modules/errortypes");
 module.exports = {
     name: "cache",
     description: "Print the content of a certain cache.",
-    usage: "['guilds'|'commands'|'reactionCooldowns'|'commandCooldowns'|'ignoreReactions'|'lastUpdate']",
+    usage: "['guilds'|'commands'|'reactionCooldowns'|'commandCooldowns'|"
+        + "'ignoreReactions'|'lastReactionUpdate'|'lastReactionroleUpdate']",
     min_args: 1,
     owner: true,
     async execute(message, args) {
@@ -32,8 +34,10 @@ module.exports = {
                 return printMap(message, commandCooldowns, mapToObject);
             case "ignoreReactions":
                 return printMap(message, ignoreReactions);
-            case "lastUpdate":
-                return printMap(message, lastUpdate, mapToObject);
+            case "lastReactionUpdate":
+                return printMap(message, lastReactionUpdate, mapToObject);
+            case "lastReactionroleUpdate":
+                return printMap(message, lastReactionrolesUpdate, mapToObject);
             default:
                 throw new InstanceNotFoundError("Could not find this cache.");
         }
@@ -61,7 +65,7 @@ async function printMap(message, map, flatMap) {
 
     if (reply && reply.length > 0) {
         for (let line of reply) {
-            await message.channel.send(line, {split:true});
+            await message.channel.send(line, {split: true});
         }
     } else {
         return message.channel.send("Cache is currently empty.");

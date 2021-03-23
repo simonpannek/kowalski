@@ -150,14 +150,28 @@ async function removeReactionRole(message, reactionMessage, emoji) {
         return message.channel.send(`Could not find an entry for the message <${reactionMessage.url}>.`);
     }
 
-    // Remove reactions from the message
-    const reactionToRemove = reactionMessage.reactions.cache
-        .find(e => (e._emoji.id === null ? e._emoji.name : stringFromEmoji(e._emoji)) === emoji);
+    const row = await reactionroles.findOne({
+        where: {
+            guild: message.guild.id,
+            channel: message.channel.id,
+            message: reactionMessage.id
+        }
+    });
 
-    if (reactionToRemove) {
-        // Remove reaction
-        // TODO: Only remove if it's the last reactionrole for this emoji on this message
-        await reactionToRemove.remove();
+    // Check if it's the last reactionrole on the message
+    if (!row) {
+        // Check if emoji is defined (this means only one reaction is getting removed)
+        if (emoji) {
+            // Remove reactions from the message
+            const reactionToRemove = reactionMessage.reactions.cache.get(emoji.id === null ? emoji.name : emoji.id);
+
+            if (reactionToRemove) {
+                // Remove reaction
+                await reactionToRemove.remove();
+            }
+        } else {
+            await reactionMessage.reactions.removeAll();
+        }
     }
 
     return message.channel.send(`The reactionrole was removed.`);
