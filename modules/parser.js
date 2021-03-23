@@ -32,6 +32,12 @@ module.exports = {
         }
     },
     // Parses a message from the id
+    channelFromId(id, guild) {
+        if (id && guild) {
+            return guild.channels.cache.get(id);
+        }
+    },
+    // Parses a message from the id
     async messageFromId(id, channel) {
         if (id && channel) {
             try {

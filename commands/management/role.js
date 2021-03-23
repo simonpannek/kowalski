@@ -1,65 +1,102 @@
 const {roles} = require("../../modules/database");
 const {roleFromMention} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
+const {
+    NotEnoughArgumentsError,
+    InvalidArgumentsError,
+    InstanceNotFoundError,
+    DatabaseError
+} = require("../../modules/errortypes");
 
 module.exports = {
     name: "role",
-    description: "Add/remove roles from the database.",
-    usage: "[add|remove] [role] [minReactions]",
-    min_args: 3,
+    description: "Add/remove a level up role from the bot.",
+    usage: "['add'|'remove'] [role] [minReactions] | ['list']",
+    min_args: 1,
+    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
-        const role = roleFromMention(args[1], message.guild);
-        if (role) {
-            // Check if argument is a number
+        let role;
+        let num;
+
+        // Parse add/remove arguments
+        if (["add", "remove"].includes(args[0].toLowerCase())) {
+            if (args.length < 3) {
+                throw new NotEnoughArgumentsError("At least 3 arguments needed for add/remove.");
+            }
+
+            role = roleFromMention(args[1], message.guild);
+
+            if (!role) {
+                throw new InstanceNotFoundError("Could not find this role.",
+                    "You can mention the role directly or use the role id.");
+            }
+
+            // Get number
             if (isNaN(args[2])) {
-                throw new Error("Invalid arguments.");
+                throw new InvalidArgumentsError("Third argument must be a number.");
             }
 
-            const num = Number(args[2]);
+            // Check bounds of number
+            num = Number(args[2]);
 
-            switch (args[0].toLowerCase()) {
-                case "add":
-                    // Try to add the role to the database
-                    try {
-                        const created = await roles.create({
-                            guild: message.guild.id,
-                            reactions: num,
-                            role: role.id
-                        });
-                        if (created) {
-                            await message.channel.send(`The role ${role.name} was added to the database.`);
-                        }
-                    } catch (error) {
-                        console.error("Something went wrong when trying to create the entry: ", error);
-                        return errorResponse(message);
-                    }
-                    break;
-                case "remove":
-                    // Try to remove the role from the database
-                    try {
-                        const deleted = await roles.destroy({
-                            where: {
-                                guild: message.guild.id,
-                                reactions: num,
-                                role: role.id
-                            }
-                        });
-                        if (deleted) {
-                            await message.channel.send(`The role ${role.name} was removed from the database.`);
-                        } else {
-                            await message.channel.send(`Could not find an entry for the role ${role.name}.`);
-                        }
-                    } catch (error) {
-                        console.error("Something went wrong when trying to delete the entry: ", error);
-                        return errorResponse(message);
-                    }
-                    break;
-                default:
-                    throw new Error("Invalid arguments.");
+            if (num < 0) {
+                throw new InvalidArgumentsError("Third argument must be positive.");
             }
-        } else {
-            return message.channel.send("Could not find this role.");
+        }
+
+        switch (args[0].toLowerCase()) {
+            case "add":
+                // Add the role to the database
+                const created = await roles.create({
+                    guild: message.guild.id,
+                    reactions: num,
+                    role: role.id
+                });
+
+                if (!created) {
+                    throw new DatabaseError(`Could not create an entry for the role ${role.name}.`);
+                }
+
+                return message.channel.send(`The role ${role.name} will be assigned to users starting from ${num} reactions.`);
+            case "remove":
+                // Remove the role from the database
+                const deleted = await roles.destroy({
+                    where: {
+                        guild: message.guild.id,
+                        reactions: num,
+                        role: role.id
+                    }
+                });
+
+                if (!deleted) {
+                    return message.channel.send(`Could not find an entry for the role ${role.name}.`);
+                }
+
+                return message.channel.send(`The role ${role.name} was removed.`);
+            case "list":
+                // Get roles
+                const rows = await roles.findAll({
+                    where: {guild: message.guild.id},
+                    attributes: ["reactions", "role"],
+                    order: [["reactions"]]
+                });
+
+                if (!rows || rows.length < 1) {
+                    return message.channel.send("The bot currently has no roles configured.")
+                }
+
+                const reply = [];
+
+                reply.push("**Roles:**");
+
+                rows.forEach(row => {
+                    reply.push(`**${row.get("reactions")} reaction(s)**\t==>\t`
+                        + `\`${roleFromMention(row.get("role"), message.guild).name}\``);
+                });
+
+                return message.channel.send(reply, {split: true});
+            default:
+                throw new InvalidArgumentsError("First argument has to be either 'add', 'remove' or 'list'.");
         }
     }
 };

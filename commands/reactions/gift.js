@@ -7,7 +7,7 @@ module.exports = {
     description: "Send a certain number of reactions to another user (50% of the reactions get lost).",
     usage: "[user] [number]",
     min_args: 2,
-    cooldown: 10,
+    cooldown: 5,
     async execute(message, args) {
         // Get author
         const author = message.author;
@@ -16,7 +16,8 @@ module.exports = {
         const user = userFromMention(args[0]);
 
         if (!user) {
-            throw new InstanceNotFoundError("Could not find this user.");
+            throw new InstanceNotFoundError("Could not find this user.",
+                "You can mention the user directly or use the user id.");
         }
 
         // Get number

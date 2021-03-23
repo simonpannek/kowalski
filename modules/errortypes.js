@@ -12,9 +12,13 @@ module.exports = {
         }
     },
     InstanceNotFoundError: class InstanceNotFoundError extends Error {
-        constructor(message = "Could not find instance.") {
+        constructor(message = "Could not find instance.", resolve) {
             super(message);
             this.name = "InstanceNotFoundError";
+
+            if (resolve && resolve.length > 0) {
+                this.resolve = resolve;
+            }
         }
     },
     DatabaseError: class DatabaseError extends Error {

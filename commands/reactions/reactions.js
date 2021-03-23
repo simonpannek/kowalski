@@ -1,13 +1,12 @@
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "reactions",
-    description: "Queries the number of reactions a user has received.",
+    description: "Get the number of reactions a user has received.",
     usage: "[?user]",
-    cooldown: 10,
+    cooldown: 5,
     async execute(message, args) {
         let user;
         if (args.length >= 1) {
@@ -17,7 +16,8 @@ module.exports = {
         }
 
         if (!user) {
-            throw new InstanceNotFoundError("Could not find this user.");
+            throw new InstanceNotFoundError("Could not find this user.",
+                "You can mention the user directly or use the user id.");
         }
 
         // Get the reactions from the database

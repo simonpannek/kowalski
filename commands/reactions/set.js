@@ -4,9 +4,10 @@ const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require(".
 
 module.exports = {
     name: "set",
-    description: "Update reactions of a user.",
+    description: "Update the reactions of a user.",
     usage: "[user] [number]",
     min_args: 1,
+    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         let user;
@@ -17,7 +18,8 @@ module.exports = {
         }
 
         if (!user) {
-            throw new InstanceNotFoundError("Could not find this user.");
+            throw new InstanceNotFoundError("Could not find this user.",
+                "You can mention the user directly or use the user id.");
         }
 
         // Get number

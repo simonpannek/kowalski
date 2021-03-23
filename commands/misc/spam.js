@@ -2,10 +2,11 @@ const {InvalidArgumentsError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "spam",
-    description: "Makes the bot spam the arguments.",
+    description: "Make the bot spam the arguments.",
     usage: "[num] [message...]",
     min_args: 2,
     message_delete: true,
+    cooldown: 30,
     owner: true,
     async execute(message, args) {
         // Get number

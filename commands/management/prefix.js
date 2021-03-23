@@ -1,10 +1,10 @@
-const {config} = require("../../modules/globals");
+const config = require("../../config.json");
 const {prefixes} = require("../../modules/database");
 const {InvalidArgumentsError, DatabaseError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "prefix",
-    description: "Change the prefix of the server.",
+    description: "Change the prefix for the server.",
     usage: "[prefix]",
     min_args: 1,
     permissions: "ADMINISTRATOR",
@@ -26,6 +26,6 @@ module.exports = {
 
         await row[0].update({prefix: args[0]});
 
-        return message.channel.send(`The bot is now listening to the prefix ${args[0]}.`);
+        return message.channel.send(`The bot is now listening to the prefix **${args[0]}**.`);
     }
 };

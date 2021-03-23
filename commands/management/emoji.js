@@ -9,14 +9,15 @@ const {
 
 module.exports = {
     name: "emoji",
-    description: "Add/remove emoji to listen to.",
+    description: "Add/remove an emoji to listen to.",
     usage: "['add'|'remove'] [emoji] | ['list']",
     min_args: 1,
+    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         let emoji;
 
-        // Check if add/remove have enough arguments
+        // Parse add/remove arguments
         if (["add", "remove"].includes(args[0].toLowerCase())) {
             if (args.length < 2) {
                 throw new NotEnoughArgumentsError("At least 2 arguments needed for add/remove.");
@@ -26,7 +27,8 @@ module.exports = {
             emoji = stringToEmoji(args[1]);
 
             if (!emoji) {
-                throw new InstanceNotFoundError("Could not find this emoji.");
+                throw new InstanceNotFoundError("Could not find this emoji.",
+                    "Make sure the emoji is registered on this server.");
             }
         }
 
@@ -42,7 +44,7 @@ module.exports = {
                     throw new DatabaseError("Could not create an entry for the emoji.");
                 }
 
-                return message.channel.send("The emoji was added to the database.");
+                return message.channel.send(`The bot is now listening to the emoji ${stringFromEmoji(emoji)}.`);
             case "remove":
                 // Remove the emoji from the database
                 const deleted = await emojis.destroy({
@@ -56,7 +58,7 @@ module.exports = {
                     return message.channel.send(`Could not find an entry for the emoji ${stringFromEmoji(emoji)}.`);
                 }
 
-                return message.channel.send(`The emoji ${stringFromEmoji(emoji)} was removed from the database.`);
+                return message.channel.send(`The bot stopped listening to the emoji ${stringFromEmoji(emoji)}.`);
             case "list":
                 // Get emojis
                 const rows = await emojis.findAll({where: {guild: message.guild.id}, attributes: ["emoji"]});
@@ -72,7 +74,7 @@ module.exports = {
 
                 return message.channel.send(`The bot is currently listening to the emoji(s) ${emojiArray.join(", ")}.`);
             default:
-                throw new InvalidArgumentsError("First argument has to be either add, remove or list.");
+                throw new InvalidArgumentsError("First argument has to be either 'add', 'remove' or 'list'.");
         }
     }
 };

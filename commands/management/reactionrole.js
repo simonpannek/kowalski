@@ -1,112 +1,154 @@
 const {reactionroles} = require("../../modules/database");
-const {roleFromMention, messageFromId, stringFromEmoji} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
+const {roleFromMention, channelFromId, messageFromId, stringToEmoji, stringFromEmoji} = require("../../modules/parser");
+const {
+    NotEnoughArgumentsError,
+    InvalidArgumentsError,
+    InstanceNotFoundError,
+    DatabaseError
+} = require("../../modules/errortypes");
 
 module.exports = {
     name: "reactionrole",
-    description: "Add/remove reactionrole from the database.",
-    usage: "[add] [message] [emoji] [role] | [remove] [message] [emoji]",
-    min_args: 3,
+    description: "Add/remove a reactionrole from the bot.",
+    usage: "['add'] [message] [emoji] [role] | ['remove'] [message] [?emoji] | ['list']",
+    min_args: 1,
+    message_delete: true,
     clear_time: 5,
+    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
-        // Parse message
-        const reactionMessage = await messageFromId(args[1], message.channel);
+        let role;
 
-        if (!reactionMessage) {
-            return message.channel.send("Could not find this message.");
+        // Parse add arguments
+        if (args[0] === "add") {
+            if (args.length < 4) {
+                throw new NotEnoughArgumentsError("At least 4 arguments needed for add.");
+            }
+
+            role = roleFromMention(args[3], message.guild);
+
+            if (!role) {
+                throw new InstanceNotFoundError("Could not find this role.",
+                    "You can mention the role directly or use the role id.");
+            }
         }
 
-        if (!reactionMessage.author.bot) {
-            return message.channel.send("Author of message must be a bot.");
-        }
+        let reactionMessage;
+        let emoji;
 
-        await message.delete();
+        // Parse add/remove arguments
+        if (["add", "remove"].includes(args[0].toLowerCase())) {
+            if (args.length < 2) {
+                throw new NotEnoughArgumentsError("At least 2 arguments needed for add/remove.");
+            }
+
+            // Parse message
+            reactionMessage = await messageFromId(args[1], message.channel);
+
+            if (!reactionMessage) {
+                throw new InstanceNotFoundError("Could not find this message.",
+                    "Right click on a message to get the message id.")
+            }
+
+            if (!reactionMessage.author.bot) {
+                throw new InvalidArgumentsError("Author of message must be a bot.");
+            }
+
+            if (args.length > 2) {
+                emoji = stringToEmoji(args[2]);
+
+                if (!emoji) {
+                    throw new InstanceNotFoundError("Could not find this emoji.",
+                        "Make sure the emoji is registered on this server.");
+                }
+            }
+        }
 
         switch (args[0].toLowerCase()) {
-            // TODO: Add list command
             case "add":
-                // Check if enough arguments for the add command are given
-                if (args.length <= 3) {
-                    throw new Error("Invalid arguments.");
+                return addReactionRole(message, reactionMessage, emoji, role);
+            case "remove":
+                return removeReactionRole(message, reactionMessage, emoji);
+            case "list":
+                // Get reactionroles
+                const rows = await reactionroles.findAll({
+                    where: {guild: message.guild.id},
+                    attributes: ["channel", "message", "emoji", "role"]
+                });
+
+                if (!rows || rows.length < 1) {
+                    return message.channel.send("The bot currently has no reactionroles configured.")
                 }
 
-                // Get role
-                const role = roleFromMention(args[3], message.guild);
-                if (role) {
-                    return addReactionRole(message, reactionMessage, args[2], role);
-                } else {
-                    return message.channel.send("Could not find this role.");
+                const reply = [];
+
+                reply.push("**Reactionroles:**");
+
+                for (const row of rows) {
+                    const currentMessage =
+                        await messageFromId(row.get("message"), channelFromId(row.get("channel"), message.guild));
+
+                    reply.push(`<${currentMessage.url}> - ${stringFromEmoji(row.get("emoji"))}\t==>\t`
+                        + `\`${roleFromMention(row.get("role"), message.guild).name}\``);
                 }
-            // TODO: Make emoji and role optional for remove command
-            case "remove":
-                return removeReactionRole(message, reactionMessage, args[2]);
+
+                return message.channel.send(reply, {split: true});
             default:
-                throw new Error("Invalid arguments.");
+                throw new InvalidArgumentsError("First argument has to be either 'add', 'remove' or 'list'.");
         }
     }
-};
+}
+;
 
 async function addReactionRole(message, reactionMessage, emoji, role) {
-    // Try to react to the message
-    try {
-        // React to message
-        await reactionMessage.react(emoji);
-    } catch (ignored) {
-        // Probably an invalid emoji
-        return errorResponse(message);
+    // React to message
+    await reactionMessage.react(emoji);
+
+    // Add the role to the database
+    const created = await reactionroles.create({
+        guild: message.guild.id,
+        channel: message.channel.id,
+        message: reactionMessage.id,
+        emoji: stringFromEmoji(emoji),
+        role: role.id
+    });
+
+    if (!created) {
+        throw new DatabaseError(`Could not create an entry for the role ${role.name}.`);
     }
 
-    // Try to add the role to the database
-    try {
-        const created = await reactionroles.create({
-            guild: message.guild.id,
-            channel: message.channel.id,
-            message: reactionMessage.id,
-            emoji: emoji,
-            role: role.id
-        });
-        if (created) {
-            return message.channel.send(`The reactionrole ${role.name} was added to the database.`);
-        }
-    } catch (error) {
-        console.error("Something went wrong when trying to create the entry: ", error);
-        return errorResponse(message);
-    }
+    return message.channel.send(`The reactionrole ${role.name} was added.`);
 }
 
 async function removeReactionRole(message, reactionMessage, emoji) {
-    // Try to remove the role from the database
-    try {
-        const deleted = await reactionroles.destroy({
-            where: {
-                guild: message.guild.id,
-                channel: message.channel.id,
-                message: reactionMessage.id,
-                emoji: emoji
-            }
-        });
-        if (deleted) {
-            // Try to remove reactions from the message
-            try {
-                // Get reaction to remove
-                const reactionToRemove = reactionMessage.reactions.cache
-                    .find(e => (e._emoji.id === null ? e._emoji.name : stringFromEmoji(e._emoji)) === emoji);
+    const query = {
+        guild: message.guild.id,
+        channel: message.channel.id,
+        message: reactionMessage.id
+    };
 
-                if (reactionToRemove) {
-                    // Remove reaction
-                    await reactionToRemove.remove();
-                }
-            } catch (ignored) {
-                // Could not remove reactions from the message, continue anyway
-            }
-
-            return message.channel.send("The reactionrole was removed from the database.");
-        } else {
-            return message.channel.send("Could not find an entry for the this reactionrole.");
-        }
-    } catch (error) {
-        console.error("Something went wrong when trying to delete the entry: ", error);
-        return errorResponse(message);
+    if (emoji) {
+        query["emoji"] = stringFromEmoji(emoji);
     }
+
+    // Remove the role from the database
+    const deleted = await reactionroles.destroy({
+        where: query
+    });
+
+    if (!deleted) {
+        return message.channel.send(`Could not find an entry for the message <${reactionMessage.url}>.`);
+    }
+
+    // Remove reactions from the message
+    const reactionToRemove = reactionMessage.reactions.cache
+        .find(e => (e._emoji.id === null ? e._emoji.name : stringFromEmoji(e._emoji)) === emoji);
+
+    if (reactionToRemove) {
+        // Remove reaction
+        // TODO: Only remove if it's the last reactionrole for this emoji on this message
+        await reactionToRemove.remove();
+    }
+
+    return message.channel.send(`The reactionrole was removed.`);
 }

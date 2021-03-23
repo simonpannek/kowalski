@@ -1,13 +1,12 @@
 const {sequelize} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "rank",
-    description: "Queries the rank of a certain user.",
+    description: "Get the rank of a user.",
     usage: "[?user]",
-    cooldown: 10,
+    cooldown: 5,
     async execute(message, args) {
         let user;
         if (args.length >= 1) {
@@ -17,7 +16,8 @@ module.exports = {
         }
 
         if (!user) {
-            throw new InstanceNotFoundError("Could not find this user.");
+            throw new InstanceNotFoundError("Could not find this user.",
+                "You can mention the user directly or use the user id.");
         }
 
         // Custom SQL query to query the rank of a user

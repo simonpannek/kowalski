@@ -1,11 +1,11 @@
-const {config, commands, getPrefix} = require("../../modules/globals");
+const config = require("../../config.json");
+const {commands, getPrefix} = require("../../modules/globals");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "help",
-    description: "Prints some information about all commands a user can execute.",
+    description: "Print some information about all commands a user can execute.",
     usage: "[?command]",
-    cooldown: 3,
     async execute(message, args) {
         const reply = [];
 
@@ -22,9 +22,12 @@ module.exports = {
             // Print help
             reply.push(`**Name:** ${capitalize(command.name)}`);
             reply.push("-----");
-            if (command.description) reply.push(`**Description:** ${command.description}`);
-            if (command.usage) reply.push(`**Usage:** ${await getPrefix(message.guild)}${command.name} ${command.usage}`);
-            if (command.cooldown) reply.push(`**Cooldown:** ${command.cooldown} seconds`);
+            if (command.description)
+                reply.push(`**Description:** ${command.description}`);
+            if (command.usage)
+                reply.push(`**Usage:** ${await getPrefix(message.guild)}${command.name} ${command.usage}`);
+            if (command.cooldown)
+                reply.push(`**Cooldown:** ${command.cooldown} seconds`);
         } else {
             // Sort commands by category
             const sortedCommands = commands.array().sort((c1, c2) => c1.category > c2.category ? 1 : -1)

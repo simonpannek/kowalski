@@ -1,45 +1,39 @@
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
-const {errorResponse} = require("../../modules/response");
 
 module.exports = {
     name: "top",
-    description: "Prints the 10 users with the most reactions.",
-    cooldown: 30,
+    description: "Print the top 10 users with the most reactions.",
+    cooldown: 10,
     async execute(message) {
-        try {
-            const reply = [];
+        const reply = [];
 
-            const top = await users.findAll({
-                where: {
-                    guild: message.guild.id
-                },
-                attributes: ["user", "reactions"],
-                order: [["reactions", "DESC"]],
-                limit: 10
-            });
+        const top = await users.findAll({
+            where: {
+                guild: message.guild.id
+            },
+            attributes: ["user", "reactions"],
+            order: [["reactions", "DESC"]],
+            limit: 10
+        });
 
-            reply.push("**Leaderboard:**");
+        reply.push("**Leaderboard:**");
 
-            if (top.length > 0) {
-                // Get max length of score (string length of reactions of first place)
-                const maxLength = String(top[0].get("reactions")).length;
+        if (top.length > 0) {
+            // Get max length of score (string length of reactions of first place)
+            const maxLength = String(top[0].get("reactions")).length;
 
-                // Loop through users and push rank to leaderboard
-                for (let i in top) {
-                    const userId = top[i].get("user");
-                    const user = userFromMention(userId);
+            // Loop through users and push rank to leaderboard
+            for (let i in top) {
+                const userId = top[i].get("user");
+                const user = userFromMention(userId);
 
-                    reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
-                        + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
-                }
+                reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
+                    + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
             }
-
-            return message.channel.send(reply, {split: true});
-        } catch (error) {
-            console.error("Something went wrong when trying to create the entry: ", error);
-            return errorResponse(message);
         }
+
+        return message.channel.send(reply, {split: true});
     }
 };
 

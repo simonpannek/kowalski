@@ -2,11 +2,12 @@ const {InvalidArgumentsError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "clear",
-    description: "Deletes a certain amount of messages.",
+    description: "Delete a certain amount of messages.",
     usage: "[number]",
     min_args: 1,
     message_delete: true,
     clear_time: 3,
+    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         // Get number
