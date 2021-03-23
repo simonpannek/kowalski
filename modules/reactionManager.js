@@ -95,10 +95,10 @@ module.exports = async (reaction, user, increment = true) => {
 
 async function triggerUpdate(message, newScore) {
     // Get guild map
-    let lastReactionUpdate = lastReactionUpdate.get(message.guild.id);
-    if (!lastReactionUpdate) {
-        lastReactionUpdate = new Collection();
-        lastReactionUpdate.set(message.guild.id, lastReactionUpdate);
+    let lastReactionGuild = lastReactionUpdate.get(message.guild.id);
+    if (!lastReactionGuild) {
+        lastReactionGuild = new Collection();
+        lastReactionUpdate.set(message.guild.id, lastReactionGuild);
     }
 
     // Time variables
@@ -106,17 +106,17 @@ async function triggerUpdate(message, newScore) {
     const now = Date.now();
 
     // Set user into map
-    lastReactionUpdate.set(message.author.id, now);
+    lastReactionGuild.set(message.author.id, now);
 
     // Schedule role update
     setTimeout(async () => {
         // Check if timeout was overwritten
-        if (lastReactionUpdate.get(message.author.id) !== now) {
+        if (lastReactionGuild.get(message.author.id) !== now) {
             return;
         }
 
         // Delete entry
-        lastReactionUpdate.delete(message.author.id);
+        lastReactionGuild.delete(message.author.id);
 
         return updateRoles(message.member, newScore);
     }, timeout);

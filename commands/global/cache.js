@@ -14,7 +14,7 @@ module.exports = {
     name: "cache",
     description: "Print the content of a certain cache.",
     usage: "['guilds'|'commands'|'reactionCooldowns'|'commandCooldowns'|"
-        + "'ignoreReactions'|'lastReactionUpdate'|'lastReactionroleUpdate']",
+        + "'ignoreReactions'|'lastReactionUpdate'|'lastReactionrolesUpdate']",
     min_args: 1,
     owner: true,
     async execute(message, args) {
@@ -36,7 +36,7 @@ module.exports = {
                 return printMap(message, ignoreReactions);
             case "lastReactionUpdate":
                 return printMap(message, lastReactionUpdate, mapToObject);
-            case "lastReactionroleUpdate":
+            case "lastReactionrolesUpdate":
                 return printMap(message, lastReactionrolesUpdate, mapToObject);
             default:
                 throw new InstanceNotFoundError("Could not find this cache.");
