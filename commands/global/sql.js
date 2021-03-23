@@ -4,9 +4,10 @@ const {InvalidArgumentsError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "sql",
-    description: "Executes the sql statement.",
+    description: "Execute the sql statement.",
     usage: "[sql statement...]",
     min_args: 1,
+    cooldown: 5,
     owner: true,
     async execute(message, args) {
         // Join arguments to one single query

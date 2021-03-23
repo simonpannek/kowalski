@@ -10,7 +10,7 @@ const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "cache",
-    description: "Prints the content of a certain cache.",
+    description: "Print the content of a certain cache.",
     usage: "[commands|reactionCooldowns|commandCooldowns|ignoreReactions|lastUpdate]",
     min_args: 1,
     owner: true,

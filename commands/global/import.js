@@ -3,9 +3,10 @@ const {InvalidArgumentsError, InstanceNotFoundError} = require("../../modules/er
 
 module.exports = {
     name: "import",
-    description: "Imports json formatted data into the table.",
+    description: "Import json formatted data into a table.",
     usage: "[table name] [json formatted data]",
     min_args: 2,
+    cooldown: 10,
     owner: true,
     async execute(message, args) {
         // Get table

@@ -1,12 +1,12 @@
 const {commands} = require("../../modules/globals");
-const {errorResponse} = require("../../modules/response");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
     name: "reload",
-    description: "Reloads the module of a command.",
+    description: "Reload the module of a command.",
     usage: "[command]",
     min_args: 1,
+    cooldown: 5,
     owner: true,
     async execute(message, args) {
         // Get command
