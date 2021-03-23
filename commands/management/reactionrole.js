@@ -1,10 +1,12 @@
+const config = require("../../config.json");
 const {reactionroles} = require("../../modules/database");
 const {roleFromMention, channelFromId, messageFromId, stringToEmoji, stringFromEmoji} = require("../../modules/parser");
 const {
     NotEnoughArgumentsError,
     InvalidArgumentsError,
     InstanceNotFoundError,
-    DatabaseError
+    DatabaseError,
+    MaxAmountReachedError
 } = require("../../modules/errortypes");
 
 module.exports = {
@@ -66,6 +68,14 @@ module.exports = {
 
         switch (args[0].toLowerCase()) {
             case "add":
+                // Check if there are too many roles registered already
+                const count = await reactionroles.count({where: {guild: message.guild.id}});
+                const limit = config.restrictions.max_reactionroles_per_guild;
+
+                if (count >= limit) {
+                    throw new MaxAmountReachedError(`The bot can only save up to ${limit} reactionroles per server.`);
+                }
+
                 return addReactionRole(message, reactionMessage, emoji, role);
             case "remove":
                 return removeReactionRole(message, reactionMessage, emoji);

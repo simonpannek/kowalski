@@ -1,10 +1,16 @@
 const {DiscordAPIError, Collection} = require("discord.js");
+const {UniqueConstraintError} = require("sequelize")
 const fs = require("fs");
 
 const config = require("../config.json");
 const {commands, commandCooldowns, getPrefix} = require("../modules/globals");
 const {errorResponse, cooldownResponse} = require("../modules/response");
-const {NotEnoughArgumentsError, InvalidArgumentsError, InstanceNotFoundError} = require("../modules/errortypes");
+const {
+    NotEnoughArgumentsError,
+    InvalidArgumentsError,
+    InstanceNotFoundError,
+    MaxAmountReachedError
+} = require("../modules/errortypes");
 
 // Get all subfolders
 const commandFolders = fs.readdirSync("./commands")
@@ -24,8 +30,6 @@ commandFolders.forEach(folder => {
         console.log(`Added command "${command.name}" in category "${command.category}".`);
     });
 });
-
-// TODO: Check how many entries there are in the reactionrole/emoji databases
 
 module.exports = {
     name: "message",
@@ -79,7 +83,7 @@ module.exports = {
         try {
             await commandHandler(message, command, args);
         } catch (error) {
-            // Add misuse cooldown (sort of global punishment for 3 seconds)
+            // Add misuse cooldown (sort of global punishment for one second)
             const timeout = 1;
             setCooldown(message.author, "misuse", timeout);
 
@@ -100,8 +104,12 @@ module.exports = {
                     }
 
                     return message.channel.send(reply);
+                case MaxAmountReachedError:
+                    return message.channel.send(`**Limit reached:** ${error.message}`);
                 case DiscordAPIError:
                     return handleApiError(message, error);
+                case UniqueConstraintError:
+                    return message.channel.send("This entry already exists.");
                 default:
                     console.error("An unknown error occurred when executing the command: ", error);
                     return errorResponse(message);

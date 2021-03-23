@@ -8,5 +8,10 @@
     "*",
     "#"
   ],
-  "reaction_cooldown": 30
+  "restrictions": {
+    "reaction_cooldown": 30,
+    "max_emojis_per_guild": 10,
+    "max_roles_per_guild": 25,
+    "max_reactionroles_per_guild": 100
+  }
 }

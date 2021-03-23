@@ -26,5 +26,11 @@ module.exports = {
             super(message);
             this.name = "DatabaseError";
         }
+    },
+    MaxAmountReachedError: class MaxAmountReachedError extends Error {
+        constructor(message = "Max amount of entries reached.") {
+            super(message);
+            this.name = "MaxAmountReachedError";
+        }
     }
 };

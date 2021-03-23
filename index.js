@@ -39,7 +39,7 @@ async function handleApiError(error) {
             return;
         default:
             console.error("An API error occured when executing the command: ", error);
-            return message.channel.send("Something went wrong trying to execute the command. Please try again later.");
+            return;
     }
 }
 

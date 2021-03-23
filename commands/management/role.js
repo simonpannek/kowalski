@@ -1,10 +1,12 @@
+const config = require("../../config.json");
 const {roles} = require("../../modules/database");
 const {roleFromMention} = require("../../modules/parser");
 const {
     NotEnoughArgumentsError,
     InvalidArgumentsError,
     InstanceNotFoundError,
-    DatabaseError
+    DatabaseError,
+    MaxAmountReachedError
 } = require("../../modules/errortypes");
 
 module.exports = {
@@ -46,6 +48,14 @@ module.exports = {
 
         switch (args[0].toLowerCase()) {
             case "add":
+                // Check if there are too many roles registered already
+                const count = await roles.count({where: {guild: message.guild.id}});
+                const limit = config.restrictions.max_roles_per_guild;
+
+                if (count >= limit) {
+                    throw new MaxAmountReachedError(`The bot can only save up to ${limit} level up roles per server.`);
+                }
+
                 // Add the role to the database
                 const created = await roles.create({
                     guild: message.guild.id,

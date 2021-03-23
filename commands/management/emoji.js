@@ -1,10 +1,12 @@
+const config = require("../../config.json");
 const {emojis} = require("../../modules/database");
 const {stringToEmoji, stringFromEmoji} = require("../../modules/parser");
 const {
     NotEnoughArgumentsError,
     InvalidArgumentsError,
     InstanceNotFoundError,
-    DatabaseError
+    DatabaseError,
+    MaxAmountReachedError
 } = require("../../modules/errortypes");
 
 module.exports = {
@@ -34,6 +36,14 @@ module.exports = {
 
         switch (args[0]) {
             case "add":
+                // Check if there are too many emojis registered already
+                const count = await emojis.count({where: {guild: message.guild.id}});
+                const limit = config.restrictions.max_emojis_per_guild;
+
+                if (count >= limit) {
+                    throw new MaxAmountReachedError(`The bot can only listen to ${limit} emojis per server.`);
+                }
+
                 // Add the emoji to the database
                 const created = await emojis.create({
                     guild: message.guild.id,
