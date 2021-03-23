@@ -1,6 +1,12 @@
 {
   "token": "bot-token",
   "owner": "bot-owner",
-  "prefixes": ["!", "?", "*", "#"],
+  "prefixes": [
+    "!",
+    "?",
+    "+",
+    "*",
+    "#"
+  ],
   "reaction_cooldown": 30
 }
