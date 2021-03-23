@@ -2,8 +2,8 @@ const {Collection} = require("discord.js");
 const {Op} = require("sequelize");
 
 const config = require("../config.json");
-const {reactionCooldowns, ignoreReactions, lastUpdate} = require("./globals");
-const {users, roles, emojis} = require("./database");
+const {reactionCooldowns, ignoreReactions, lastReactionUpdate, updateRoles} = require("./globals");
+const {users, emojis} = require("./database");
 const {stringFromEmoji} = require("./parser");
 const {DatabaseError} = require("./errortypes");
 
@@ -62,7 +62,7 @@ module.exports = async (reaction, user, increment = true) => {
             reactionCooldowns.set(message.guild.id, reactionGuild);
         }
 
-        const currentCooldown = config.reaction_cooldown * 1000;
+        const currentCooldown = config.restrictions.reaction_cooldown * 1000;
         reactionGuild.set(user.id, now + currentCooldown);
 
         // Remove cooldown from collection when expired
@@ -90,15 +90,15 @@ module.exports = async (reaction, user, increment = true) => {
 
     // Update role
     const newScore = Math.max(userRow[0].get("reactions") + (increment ? 1 : -1), 0);
-    await updateRole(message, newScore);
+    return triggerUpdate(message, newScore);
 };
 
-async function updateRole(message, newScore) {
+async function triggerUpdate(message, newScore) {
     // Get guild map
-    let lastUpdateGuild = lastUpdate.get(message.guild.id);
-    if (!lastUpdateGuild) {
-        lastUpdateGuild = new Collection();
-        lastUpdate.set(message.guild.id, lastUpdateGuild);
+    let lastReactionUpdate = lastReactionUpdate.get(message.guild.id);
+    if (!lastReactionUpdate) {
+        lastReactionUpdate = new Collection();
+        lastReactionUpdate.set(message.guild.id, lastReactionUpdate);
     }
 
     // Time variables
@@ -106,58 +106,18 @@ async function updateRole(message, newScore) {
     const now = Date.now();
 
     // Set user into map
-    lastUpdateGuild.set(message.author.id, now);
+    lastReactionUpdate.set(message.author.id, now);
 
     // Schedule role update
     setTimeout(async () => {
         // Check if timeout was overwritten
-        if (lastUpdateGuild.get(message.author.id) !== now) {
+        if (lastReactionUpdate.get(message.author.id) !== now) {
             return;
         }
 
         // Delete entry
-        lastUpdateGuild.delete(message.author.id);
+        lastReactionUpdate.delete(message.author.id);
 
-        // Get roles sorted ascending
-        const guildBoundaries = await roles.findAll({
-            where: {guild: message.guild.id},
-            attributes: ["reactions", "role"],
-            order: [["reactions"]]
-        });
-
-        // Check if something has to be modified
-        if (!guildBoundaries) {
-            return;
-        }
-
-        // Get new role of user
-        let userRole;
-        if (guildBoundaries.length >= 1 && guildBoundaries[0].get("reactions") <= newScore) {
-            userRole = guildBoundaries[0];
-
-            for (let role of guildBoundaries) {
-                if (role.get("reactions") <= newScore) {
-                    userRole = role;
-                } else {
-                    break;
-                }
-            }
-
-            // Update role
-            await message.member.roles.add(userRole.get("role"));
-        } else {
-            userRole = null;
-        }
-
-        // Remove roles user should not have
-        for (let role of guildBoundaries) {
-            const currentRole = role.get("role");
-
-            // Check if member has a role they should not have
-            if ((!userRole || currentRole !== userRole.get("role")) && message.member.roles.cache.has(currentRole)) {
-                // Remove role
-                await message.member.roles.remove(currentRole);
-            }
-        }
+        return updateRoles(message.member, newScore);
     }, timeout);
 }

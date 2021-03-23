@@ -9,13 +9,8 @@ module.exports = async (reaction, user, increment = true) => {
 
     // Check if the reaction is partial
     if (reaction.partial) {
-        // Try to fetch the information
-        try {
-            await reaction.fetch();
-        } catch (error) {
-            console.error("Something went wrong when fetching the message a user reacted to: ", error);
-            return;
-        }
+        // Fetch the information
+        await reaction.fetch();
     }
 
     // Execute reaction-managers

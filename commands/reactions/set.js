@@ -1,3 +1,4 @@
+const {updateRoles} = require("../../modules/globals");
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
 const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require("../../modules/errortypes");
@@ -10,16 +11,19 @@ module.exports = {
     cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
-        let user;
-        if (args.length >= 1) {
-            user = userFromMention(args[0]);
-        } else {
-            user = message.author;
-        }
+        const user = userFromMention(args[0]);
 
         if (!user) {
             throw new InstanceNotFoundError("Could not find this user.",
                 "You can mention the user directly or use the user id.");
+        }
+
+        // Get member of user
+        const userMember = message.guild.members.cache.get(user.id);
+
+        if (!userMember) {
+            throw new InstanceNotFoundError("Could not find this user on the server.",
+                "Make sure the user you refer to is currently on the server.");
         }
 
         // Get number
@@ -45,6 +49,8 @@ module.exports = {
         }
 
         await row[0].update({reactions: num});
+
+        await updateRoles(userMember);
 
         return message.channel.send(`The user ${user.tag} now has **${num} reaction(s)**.`);
     }

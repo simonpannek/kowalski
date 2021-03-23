@@ -1,3 +1,4 @@
+const {updateRoles} = require("../../modules/globals");
 const {users} = require("../../modules/database");
 const {userFromMention} = require("../../modules/parser");
 const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require("../../modules/errortypes");
@@ -7,10 +8,17 @@ module.exports = {
     description: "Send a certain number of reactions to another user (50% of the reactions get lost).",
     usage: "[user] [number]",
     min_args: 2,
-    cooldown: 5,
+    cooldown: 10,
     async execute(message, args) {
         // Get author
         const author = message.author;
+
+        // Get member of author
+        const authorMember = message.guild.members.cache.get(author.id);
+
+        if (!authorMember) {
+            throw new InstanceNotFoundError("Could not find the author on the server.");
+        }
 
         // Get user
         const user = userFromMention(args[0]);
@@ -18,6 +26,14 @@ module.exports = {
         if (!user) {
             throw new InstanceNotFoundError("Could not find this user.",
                 "You can mention the user directly or use the user id.");
+        }
+
+        // Get member of user
+        const userMember = message.guild.members.cache.get(user.id);
+
+        if (!userMember) {
+            throw new InstanceNotFoundError("Could not find this user on the server.",
+                "Make sure the user you refer to is currently on the server.");
         }
 
         // Get number
@@ -59,7 +75,9 @@ module.exports = {
         const toSend = Math.floor(num / 2);
         await userRow[0].increment({reactions: toSend});
 
-        // TODO: Update roles accordingly (maybe combine as a huge "update roles" module together with reactionroles?)
+        // Update roles
+        await updateRoles(authorMember);
+        await updateRoles(userMember);
 
         return message.channel.send(`${user.tag} has received **${toSend} reaction(s)**.`);
     }
