@@ -67,7 +67,8 @@ module.exports = {
                     throw new DatabaseError(`Could not create an entry for the role ${role.name}.`);
                 }
 
-                return message.channel.send(`The role ${role.name} will be assigned to users starting from ${num} reactions.`);
+                return message.channel.send(`The role ${role.name} will be assigned to users starting from `
+                    + `**${num} reaction(s)*.`);
             case "remove":
                 // Remove the role from the database
                 const deleted = await roles.destroy({

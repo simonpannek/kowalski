@@ -52,8 +52,8 @@ module.exports = {
     stringToEmoji(string) {
         if (string) {
             // Try to find an available guild emoji
-            const guildEmoji = client.emojis.cache.find(emoji => emoji.available
-                && string === (emoji.id === null ? emoji.name : `<:${emoji.name}:${emoji.id}>`));
+            const guildEmoji = client.emojis.cache.find(emoji => emoji.available && string ===
+                (emoji.id === null ?emoji.name : `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`));
 
             if (guildEmoji) {
                 return guildEmoji;
@@ -74,7 +74,7 @@ module.exports = {
             return emoji;
         }
 
-        return emoji.id === null ? emoji.name : `<:${emoji.name}:${emoji.id}>`;
+        return emoji.id === null ? emoji.name : `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`;
     },
     // Parses an array of strings into a json wrapped array of arrays of strings, which fit into the max message size
     arraySplit(message = [""]) {
