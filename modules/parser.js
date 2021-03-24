@@ -4,17 +4,13 @@ const {client} = require("./globals");
 
 module.exports = {
     // Parses a user from a mention or directly from the id
-    userFromMention(mention) {
-        if (mention) {
-            if (mention.startsWith("<@") && mention.endsWith(">")) {
-                mention = mention.slice(2, -1);
+    userFromMention: userFromMention,
+    // Parses a member from a mention or directly from the id
+    memberFromMention(mention, guild) {
+        const user = userFromMention(mention);
 
-                if (mention.startsWith("!")) {
-                    mention = mention.slice(1);
-                }
-            }
-
-            return client.users.cache.get(mention);
+        if (user && guild) {
+            return guild.members.cache.get(user.id)
         }
     },
     // Parses a role from a mention or directly from the id
@@ -53,7 +49,7 @@ module.exports = {
         if (string) {
             // Try to find an available guild emoji
             const guildEmoji = client.emojis.cache.find(emoji => emoji.available && string ===
-                (emoji.id === null ?emoji.name : `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`));
+                (emoji.id === null ? emoji.name : `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`));
 
             if (guildEmoji) {
                 return guildEmoji;
@@ -116,3 +112,25 @@ module.exports = {
         return reply;
     }
 };
+
+function userFromMention(mention) {
+    if (!mention) {
+        return;
+    }
+
+    if (mention.startsWith("<@") && mention.endsWith(">")) {
+        mention = mention.slice(2, -1);
+
+        if (mention.startsWith("!")) {
+            mention = mention.slice(1);
+        }
+    }
+
+    const user = client.users.cache.get(mention);
+
+    if (!user || user.bot) {
+        return;
+    }
+
+    return user;
+}

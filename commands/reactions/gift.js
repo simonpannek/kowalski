@@ -1,6 +1,6 @@
 const {updateRoles} = require("../../modules/globals");
 const {users} = require("../../modules/database");
-const {userFromMention} = require("../../modules/parser");
+const {memberFromMention} = require("../../modules/parser");
 const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require("../../modules/errortypes");
 
 module.exports = {
@@ -10,30 +10,19 @@ module.exports = {
     min_args: 2,
     cooldown: 10,
     async execute(message, args) {
-        // Get author
-        const author = message.author;
-
         // Get member of author
-        const authorMember = message.guild.members.cache.get(author.id);
+        const authorMember = message.guild.members.cache.get(message.author.id);
 
         if (!authorMember) {
-            throw new InstanceNotFoundError("Could not find the author on the server.");
+            throw new InstanceNotFoundError("Could not find the author of this message.");
         }
 
         // Get user
-        const user = userFromMention(args[0]);
-
-        if (!user) {
-            throw new InstanceNotFoundError("Could not find this user.",
-                "You can mention the user directly or use the user id.");
-        }
-
-        // Get member of user
-        const userMember = message.guild.members.cache.get(user.id);
+        const userMember = memberFromMention(args[0], message.guild);
 
         if (!userMember) {
-            throw new InstanceNotFoundError("Could not find this user on the server.",
-                "Make sure the user you refer to is currently on the server.");
+            throw new InstanceNotFoundError("Could not find this user.",
+                "You can mention the user directly or use the user id.");
         }
 
         // Check if user and author are the same user
@@ -55,17 +44,17 @@ module.exports = {
 
         // Get entry of user
         const userRow = await users.findOrCreate({
-            where: {guild: message.guild.id, user: user.id}
+            where: {guild: message.guild.id, user: userMember.id}
         });
 
         // Check if user has an entry
         if (!userRow || userRow.length < 1) {
-            throw new DatabaseError(`Could not find or create an entry for the user ${user.tag}`);
+            throw new DatabaseError(`Could not find or create an entry for the user ${userMember.tag}`);
         }
 
         // Get entry of message author
         const authorRow = await users.findOne({
-            where: {guild: message.guild.id, user: author.id}
+            where: {guild: message.guild.id, user: authorMember.id}
         });
 
         // Check if author has enough reactions
@@ -84,6 +73,6 @@ module.exports = {
         await updateRoles(authorMember);
         await updateRoles(userMember);
 
-        return message.channel.send(`${user.tag} has received **${toSend} reaction(s)**.`);
+        return message.channel.send(`${userMember.user.tag} has received **${toSend} reaction(s)**.`);
     }
 };
