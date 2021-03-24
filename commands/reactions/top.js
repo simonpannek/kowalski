@@ -17,20 +17,22 @@ module.exports = {
             limit: 10
         });
 
+        if (top.length < 1) {
+            return message.channel.send("The leaderboard is currently empty.");
+        }
+
         reply.push("**Leaderboard:**");
 
-        if (top.length > 0) {
-            // Get max length of score (string length of reactions of first place)
-            const maxLength = String(top[0].get("reactions")).length;
+        // Get max length of score (string length of reactions of first place)
+        const maxLength = String(top[0].get("reactions")).length;
 
-            // Loop through users and push rank to leaderboard
-            for (let i in top) {
-                const userId = top[i].get("user");
-                const user = userFromMention(userId);
+        // Loop through users and push rank to leaderboard
+        for (let i in top) {
+            const userId = top[i].get("user");
+            const user = userFromMention(userId);
 
-                reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
-                    + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
-            }
+            reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
+                + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
         }
 
         return message.channel.send(reply, {split: true});

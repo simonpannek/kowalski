@@ -86,10 +86,10 @@ module.exports = {
             // Add startString in the beginning
             if (!currentMessage || currentMessage.length <= 0 || !currentMessage[0].startsWith(startString)) {
                 currentMessage[0] = startString;
-                currentSum = startString.length + 1;
+                currentSum = startString.length + endString.length + 2;
             }
 
-            if (currentSum + newString.length > maxLength - endString.length) {
+            if (currentSum + newString.length > maxLength) {
                 // Add current string to message
                 currentMessage.push(endString);
                 reply.push(currentMessage);
