@@ -36,6 +36,11 @@ module.exports = {
                 "Make sure the user you refer to is currently on the server.");
         }
 
+        // Check if user and author are the same user
+        if (authorMember.id === userMember.id) {
+            throw new InvalidArgumentsError("You cannot send reactions to yourself.");
+        }
+
         // Get number
         if (isNaN(args[1])) {
             throw new InvalidArgumentsError("Second argument must be a number.");
