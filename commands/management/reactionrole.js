@@ -16,7 +16,6 @@ module.exports = {
     min_args: 1,
     message_delete: true,
     clear_time: 5,
-    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         let role;

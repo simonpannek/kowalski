@@ -14,7 +14,6 @@ module.exports = {
     description: "Add/remove an emoji to listen to.",
     usage: "['add'|'remove'] [emoji] | ['list']",
     min_args: 1,
-    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         let emoji;

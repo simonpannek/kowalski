@@ -11,9 +11,8 @@ module.exports = {
 
         reply.push("");
 
-        reply.push("*If you are using the minimal permissions invite link, make sure the custom role of the bot is "
-            + "ordered above all roles the bot should be able to manage (Otherwise it won't be able to assign them "
-            + "to the users).*")
+        reply.push("*Make sure the custom role of the bot is ordered above all roles the bot should be able to manage "
+            + "(Otherwise it won't be able to assign them to the users).*")
 
         reply.push("");
 

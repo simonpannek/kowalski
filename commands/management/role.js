@@ -14,7 +14,6 @@ module.exports = {
     description: "Add/remove a level up role from the bot.",
     usage: "['add'|'remove'] [role] [minReactions] | ['list']",
     min_args: 1,
-    cooldown: 5,
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         let role;
@@ -68,7 +67,7 @@ module.exports = {
                 }
 
                 return message.channel.send(`The role ${role.name} will be assigned to users starting from `
-                    + `**${num} reaction(s)*.`);
+                    + `**${num} reaction(s)**.`);
             case "remove":
                 // Remove the role from the database
                 const deleted = await roles.destroy({

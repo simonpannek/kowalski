@@ -73,6 +73,9 @@ module.exports = {
             userRole = null;
         }
 
+        // Refresh cache
+        member = await member.fetch(true);
+
         const toRemove = [];
 
         // Get roles user should not have
@@ -80,7 +83,7 @@ module.exports = {
             const currentRole = role.get("role");
 
             // Check if member has a role they should not have
-            if ((!userRole || (currentRole !== userRole.get("role")) && member.roles.cache.has(currentRole))) {
+            if ((!userRole || currentRole !== userRole.get("role")) && member.roles.cache.has(currentRole)) {
                 toRemove.push(currentRole);
             }
         }

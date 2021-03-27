@@ -10,7 +10,7 @@ module.exports = {
         }
 
         // Check if message was sent by a bot
-        if (!message.author.bot) {
+        if (!message.author || !message.author.bot) {
             return;
         }
 

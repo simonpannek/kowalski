@@ -8,7 +8,7 @@ module.exports = {
         // Get ids of messages
         const ids = [];
 
-        messages.filter(message => message.author.bot).forEach(message => ids.push(message.id));
+        messages.filter(message => message.author && message.author.bot).forEach(message => ids.push(message.id));
 
         // Check if there are any messages left after filtering
         if (ids.length < 1) {

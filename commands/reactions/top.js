@@ -6,8 +6,6 @@ module.exports = {
     description: "Print the top 10 users with the most reactions.",
     cooldown: 10,
     async execute(message) {
-        const reply = [];
-
         const top = await users.findAll({
             where: {
                 guild: message.guild.id
@@ -20,6 +18,8 @@ module.exports = {
         if (top.length < 1) {
             return message.channel.send("The leaderboard is currently empty.");
         }
+
+        const reply = [];
 
         reply.push("**Leaderboard:**");
 
