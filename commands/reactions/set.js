@@ -43,7 +43,7 @@ module.exports = {
 
         await row[0].update({reactions: num});
 
-        await updateRoles(userMember);
+        await updateRoles(userMember, num);
 
         return message.channel.send(`The user ${userMember.user.tag} now has **${num} reaction(s)**.`);
     }
