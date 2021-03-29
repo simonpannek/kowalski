@@ -1,6 +1,6 @@
 module.exports = {
-    name: "link",
-    description: "Get an invite link for this bot.",
+    name: "invite",
+    description: "Get a discord invite link for this bot.",
     async execute(message) {
         const reply = [];
 
