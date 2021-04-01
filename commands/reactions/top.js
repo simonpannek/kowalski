@@ -31,8 +31,10 @@ module.exports = {
             const userId = top[i].get("user");
             const user = userFromMention(userId);
 
-            reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
-                + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
+            if (user) {
+                reply.push(`${addPadding(top[i].get("reactions"), maxLength)}\t|\t`
+                    + `${rankToEmoji(Number(i) + 1)}\t|\t${user.tag}`);
+            }
         }
 
         return message.channel.send(reply, {split: true});
