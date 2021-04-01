@@ -25,7 +25,7 @@ module.exports = {
             .query(`SELECT ranked
                     FROM users u
                              LEFT OUTER JOIN (
-                        SELECT user, RANK() OVER (ORDER BY reactions DESC) AS ranked
+                        SELECT user, RANK() OVER (ORDER BY reactions DESC, user) AS ranked
                         FROM users
                         WHERE guild = $1
                     ) AS r ON r.user = u.user

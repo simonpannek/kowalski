@@ -11,7 +11,7 @@ module.exports = {
                 guild: message.guild.id
             },
             attributes: ["user", "reactions"],
-            order: [["reactions", "DESC"]],
+            order: [["reactions", "DESC"], "user"],
             limit: 10
         });
 
