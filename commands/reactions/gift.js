@@ -5,7 +5,7 @@ const {InvalidArgumentsError, InstanceNotFoundError, DatabaseError} = require(".
 
 module.exports = {
     name: "gift",
-    description: "Send a certain number of reactions to another user (50% of the reactions get lost).",
+    description: "Send a certain number of reactions to another user (at least 10% of the reactions get lost).",
     usage: "[user] [number]",
     min_args: 2,
     cooldown: 10,
@@ -66,7 +66,7 @@ module.exports = {
         await authorRow.decrement({reactions: num});
 
         // Update user
-        const toSend = Math.floor(num / 2);
+        const toSend = Math.floor(num * 0.9);
         await userRow[0].increment({reactions: toSend});
 
         // Update roles
