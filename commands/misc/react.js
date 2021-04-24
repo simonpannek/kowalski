@@ -10,15 +10,15 @@ module.exports = {
     permissions: "ADMINISTRATOR",
     async execute(message, args) {
         // Find message to react to
-        await message.channel.messages.fetch();
+        const reactMessage = await message.channel.messages.fetch({limit: 1}).then(async messages => {
+            let message = messages.first();
 
-        await message.channel.messages.cache.array()
-            .filter(m => m.partial)
-            .map(async m => await m.fetch());
+            if (message && message.partial) {
+                await message.fetch();
+            }
 
-        const reactMessage = await message.channel.messages.cache.array()
-            .sort((o1, o2) => o2.createdAt - o1.createdAt)
-            .find(m => !m.deleted);
+            return message;
+        });
 
         if (!reactMessage) {
             throw new InstanceNotFoundError("Could not find a message to react to.",
