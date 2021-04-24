@@ -13,6 +13,7 @@ module.exports = {
         await message.channel.messages.fetch();
 
         const reactMessage = await message.channel.messages.cache.array()
+            .map(async m => m.partial ? await m.fetch() : m)
             .sort((o1, o2) => o2.createdAt - o1.createdAt)
             .find(m => !m.deleted);
 
