@@ -23,6 +23,7 @@ module.exports = {
                 const guilds = new Map();
                 client.guilds.cache.forEach(guild => guilds.set(guild.id, {
                     name: guild.name,
+                    owner: guild.owner.user.tag,
                     memberCount: guild.memberCount
                 }));
                 return printMap(message, guilds);
