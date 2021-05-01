@@ -7,7 +7,7 @@ const {
     lastReactionUpdate,
     lastReactionrolesUpdate
 } = require("../../modules/globals");
-const {arraySplit} = require("../../modules/parser");
+const {userFromMention, arraySplit} = require("../../modules/parser");
 const {InstanceNotFoundError} = require("../../modules/errortypes");
 
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
                 const guilds = new Map();
                 client.guilds.cache.forEach(guild => guilds.set(guild.id, {
                     name: guild.name,
-                    owner: guild.owner.user.tag,
+                    owner: userFromMention(guild.ownerID).tag,
                     memberCount: guild.memberCount
                 }));
                 return printMap(message, guilds);
