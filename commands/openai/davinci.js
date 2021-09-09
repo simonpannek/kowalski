@@ -6,7 +6,7 @@ module.exports = {
     description: "Auto complete the prompt using the davinci engine.",
     usage: "[tokens] [prompt...]",
     min_args: 1,
-    cooldown: 15,
+    cooldown: 10,
     owner: true,
     async execute(message, args) {
         // Get number

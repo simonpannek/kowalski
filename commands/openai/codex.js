@@ -6,7 +6,7 @@ module.exports = {
     description: "Auto complete the prompt using the codex engine.",
     usage: "[tokens] [prompt...]",
     min_args: 1,
-    cooldown: 30,
+    cooldown: 10,
     async execute(message, args) {
         // Get number
         if (isNaN(args[0])) {
