@@ -20,6 +20,7 @@
   "dependencies": {
     "discord.js": "^12.5.1",
     "emoji-regex": "^9.2.2",
+    "openai-api": "^1.2.6",
     "sequelize": "^6.5.0",
     "sqlite3": "^5.0.2"
   }

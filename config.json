@@ -13,5 +13,8 @@
     "max_emojis_per_guild": 10,
     "max_roles_per_guild": 25,
     "max_reactionroles_per_guild": 100
+  },
+  "extra": {
+    "openai_key": null
   }
 }

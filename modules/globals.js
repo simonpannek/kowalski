@@ -1,5 +1,7 @@
 const {Client, Collection} = require("discord.js");
+const OpenAI = require("openai-api");
 
+const config = require("../config.json");
 const {roles, users, prefixes} = require("./database");
 
 module.exports = {
@@ -16,6 +18,7 @@ module.exports = {
     lastReactionUpdate: new Collection(),
     // Threshold for less reactionrole changes
     lastReactionrolesUpdate: new Collection(),
+    openai: config.extra.openai_key != null ? new OpenAI(config.extra.openai_key) : null,
     // Return prefix for current server
     async getPrefix(guild) {
         // Get prefix entry from database

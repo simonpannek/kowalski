@@ -27,6 +27,12 @@ module.exports = {
             this.name = "DatabaseError";
         }
     },
+    ApiError: class ApiError extends Error {
+        constructor(message = "Something went wrong connecting to the API.") {
+            super(message);
+            this.name = "ApiError";
+        }
+    },
     MaxAmountReachedError: class MaxAmountReachedError extends Error {
         constructor(message = "Max amount of entries reached.") {
             super(message);
