@@ -21,6 +21,10 @@ module.exports = {
             throw new InvalidArgumentsError("First argument must be greater than 63.");
         }
 
+        if (num > 1001) {
+            throw new InvalidArgumentsError("First argument must be smaller than 1001.");
+        }
+
         // Join arguments to one single query
         let query = args.join(" ");
 
@@ -47,7 +51,7 @@ module.exports = {
         }).then(response => response.data);
 
         if (choices && choices.length >= 1) {
-            return message.channel.send(`**${query}**${choices[0].text}`);
+            return message.channel.send(`**${query}**${choices[0].text}`, {split: true});
         } else {
             throw new ApiError();
         }

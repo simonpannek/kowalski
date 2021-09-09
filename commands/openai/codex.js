@@ -20,6 +20,10 @@ module.exports = {
             throw new InvalidArgumentsError("First argument must be greater than 99.");
         }
 
+        if (num > 500) {
+            throw new InvalidArgumentsError("First argument must be smaller than 501.");
+        }
+
         // Join arguments to one single query
         let query = args.join(" ");
 
@@ -44,7 +48,9 @@ module.exports = {
             n: 1,
             stop: '"""',
             stream: false
-        }).then(response => response.data);
+        }).then(response => {
+            console.log(response);
+            return response.data});
 
         if (choices && choices.length >= 1) {
             return message.channel.send(`\`\`\`py\n${choices[0].text}\`\`\``);
