@@ -48,12 +48,10 @@ module.exports = {
             n: 1,
             stop: '"""',
             stream: false
-        }).then(response => {
-            console.log(response);
-            return response.data});
+        }).then(response => response.data);
 
         if (choices && choices.length >= 1) {
-            return message.channel.send(`\`\`\`py\n${choices[0].text}\`\`\``);
+            return message.channel.send(`\`\`\`py\n${choices[0].text.substr(0, 2000 - 6)}\`\`\``);
         } else {
             throw new ApiError();
         }
