@@ -41,6 +41,10 @@ module.exports = {
         if (num < 2) {
             throw new InvalidArgumentsError("Second argument must be greater than 1.");
         }
+        
+        if (num % 1 != 0) {
+            throw new InvalidArgumentsError("Second argument must be a whole number.");
+        }
 
         // Get entry of user
         const userRow = await users.findOrCreate({
