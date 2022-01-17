@@ -42,7 +42,7 @@ module.exports = {
             throw new InvalidArgumentsError("Second argument must be greater than 1.");
         }
         
-        if (num % 1 != 0) {
+        if (num % 1 !== 0) {
             throw new InvalidArgumentsError("Second argument must be a whole number.");
         }
 
