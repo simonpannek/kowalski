@@ -43,7 +43,7 @@ module.exports = {
         }
         
         if (num % 1 != 0) {
-            throw new InvalidArgumentsError("Second argument must be a whole number");
+            throw new InvalidArgumentsError("Second argument must be a whole number.");
         }
 
         // Get entry of user
