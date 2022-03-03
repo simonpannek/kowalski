@@ -45,6 +45,11 @@ module.exports = {
             return;
         }
 
+        // (╯°□°）╯︵ ┻━┻
+        if (message.content.includes("(╯°□°）╯︵ ┻━┻")) {
+            return message.channel.send("┬─┬ ノ( ゜-゜ノ)");
+        }
+
         // Check prefix
         const messagePrefix = message.content.charAt(0);
 
